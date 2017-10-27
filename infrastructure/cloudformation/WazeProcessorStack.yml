@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+# define the variables that user needs to provide
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: 'Enter name of the environment (Dev, Test, Prod, etc)'
+    AllowedPattern: '^[a-z0-9]*$'
+    ConstraintDescription: Environment name must be lower case
+  S3ArtifactsBucket:
+    Type: String
+    Description: Enter the bucket name where Lambda function artifacts are stored
+
+Resources:
+  
+  # create a cloudwatch event that will run on a schedule
+  DataRetrievalTimer:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: !Sub 'scripted-data-retrieval-timer-${EnvironmentName}'
+      ScheduleExpression: rate(2 minutes)
+  
+  # TODO: create a trigger for the cloudwatch event that can trigger a lambda function
+  
+  # create the S3 bucket that will store our data files
+  WazeDataBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub 'scripted-waze-data-${AWS::AccountId}-${EnvironmentName}'
+  
+  # create the SQS queue that will track new data
+  DataProcessingQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: !Sub 'scripted-waze-data-processing-${EnvironmentName}'
+  
+  # TODO: create the dead letter queue
+
+  # TODO: create a cloudwatch alarm to monitor the dead letter queue
+
+  # TODO: create an SNS topic that can send notifications when alarm on dead letter queue fires
+
+  # TODO: create the lambda function that will get data from waze, store it in S3, notify the queue, and start the first round of processing
+
+  # create a service role for the data retriever lambda function
+  DataRetrievalExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'scripted-data-retrieval-execution-role-${EnvironmentName}'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com 
+                - events.amazonaws.com
+      ManagedPolicyArns:
+        - !Ref DataRetrievalResourceAccess
+
+  # create a policy to allow access to the data bucket, the queue, and execution of the data processor
+  DataRetrievalResourceAccess:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      ManagedPolicyName: !Sub 'scripted-data-and-queue-access-policy-${EnvironmentName}'
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 's3:DeleteObject'
+              - 's3:ListBucket'
+            Effect: Allow
+            Resource:
+              - !GetAtt WazeDataBucket.Arn
+              - !Sub '${WazeDataBucket.Arn}/*'
+          - Action:
+              - 'sqs:SendMessage'
+              - 'sqs:ReceiveMessage'
+              - 'sqs:DeleteMessage'
+            Effect: Allow
+            Resource:
+              - !GetAtt DataProcessingQueue.Arn
