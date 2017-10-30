@@ -9,6 +9,9 @@ Parameters:
   S3ArtifactsBucket:
     Type: String
     Description: Enter the bucket name where Lambda function artifacts are stored
+  WazeDataHttpUrl:
+    Type: String
+    Description: Url to your Waze CCP data feed
 
 Resources:
   
@@ -18,8 +21,10 @@ Resources:
     Properties:
       Name: !Sub 'scripted-data-retrieval-timer-${EnvironmentName}'
       ScheduleExpression: rate(2 minutes)
-  
-  # TODO: create a trigger for the cloudwatch event that can trigger a lambda function
+      Targets:
+        - 
+          Arn: !GetAtt DataRetrievalLambda.Arn
+          Id: !Sub 'DataRetrievalTimerTarget-${EnvironmentName}'
   
   # create the S3 bucket that will store our data files
   WazeDataBucket:
@@ -39,7 +44,33 @@ Resources:
 
   # TODO: create an SNS topic that can send notifications when alarm on dead letter queue fires
 
-  # TODO: create the lambda function that will get data from waze, store it in S3, notify the queue, and start the first round of processing
+  # create the lambda function that will get data from waze, store it in S3, notify the queue, and start the first round of processing
+  DataRetrievalLambda:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Runtime: 'nodejs6.10'
+      Code:
+        S3Bucket: !Sub '${S3ArtifactsBucket}'
+        S3Key: 'waze-data-download.zip'
+      Handler: 'waze-data-download.downloadData'
+      FunctionName: !Sub 'waze-data-retrieval-${EnvironmentName}'
+      Description: 'hits the waze API and saves the data as json to an s3 bucket'
+      Role: !GetAtt DataRetrievalExecutionRole.Arn
+      Timeout: 120
+      MemorySize: 128
+      Environment:
+        Variables:
+          'WAZEDATAURL' : !Sub '${WazeDataHttpUrl}'
+          'WAZEDATABUCKET' : !Ref WazeDataBucket
+  
+  # have to give cloudwatch permission to actually fire the lambda func
+  DataRetrievalLambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt DataRetrievalLambda.Arn
+      Principal: 'events.amazonaws.com'
+      SourceArn: !GetAtt DataRetrievalTimer.Arn
 
   # create a service role for the data retriever lambda function
   DataRetrievalExecutionRole:
@@ -54,7 +85,6 @@ Resources:
             Principal:
               Service:
                 - lambda.amazonaws.com 
-                - events.amazonaws.com
       ManagedPolicyArns:
         - !Ref DataRetrievalResourceAccess
 
@@ -82,3 +112,4 @@ Resources:
             Effect: Allow
             Resource:
               - !GetAtt DataProcessingQueue.Arn
+          #TODO: Add logging permissions so lambda can log errors to cloudwatch
