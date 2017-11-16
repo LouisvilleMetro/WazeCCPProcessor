@@ -1,0 +1,1 @@
+output "environment_to_lower" { value = "${lower(var.environment)}" }
