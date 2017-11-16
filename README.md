@@ -42,8 +42,15 @@ You can update the CF stack with new YAML as the code here gets updated, and it 
 
 We are working on writing more of the Cloud Formation YAML to take the stored S3 JSON files and process them into an AWS relational database.
 
-See our [Architecture Diagram](docs/Metro Waze%20Proposed%20Architecture.pdf) and [Requirements Doc](docs/Required%20infrastructure.txt) in our [docs folder](docs) for our blueprint of how we are proceeding. 
+See our [Architecture Diagram](docs/Metro%20Waze%20Proposed%20Architecture.pdf) and [Requirements Doc](docs/Required%20infrastructure.txt) in our [docs folder](docs) for our blueprint of how we are proceeding. 
 
 **We would like to collaborate with you!**  Please suggest updates, make a new branch and add to the CF YAML, collaborate on the Wiki, etc.  It would be great to work together to get the best solution and finish faster.   
 
 We started with Cloud Formation directly, but if you would instead like to build out the code in [Terraform](http://www.terraform.io) please do so it can be deployed to any cloud provider. 
+
+## Background
+
+If you'd like a little more background on Louisville and what our city has been going with Waze and other mobility data, take a look at these links:
+
+1. [Louisville Waze Internal Hackathon Recap](https://medium.com/louisville-metro-opi2/waze-louisvilles-first-internal-hackathon-647363a85392)
+2. [Harvard Civic Analytics Network Presentation - Slides](https://docs.google.com/presentation/d/1esPVvhuIRjD199rN8aimK_XcmCt0pJOkjEIyCMhGKks/)
