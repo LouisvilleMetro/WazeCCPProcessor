@@ -12,6 +12,8 @@ You enter your CCP data feed URL as a parameter.
 
 Then you can analyze, query, extract live and historic data for your city.
 
+See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) area for how you can help, and the [Wiki](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki) for all the details.
+
 ## What is Completed
 
 Currently we have a Cloud Formation template working that you can deploy.  
