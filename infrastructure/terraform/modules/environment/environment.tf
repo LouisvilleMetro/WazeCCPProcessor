@@ -4,46 +4,113 @@ provider "aws" {
 }
 
 ###############################################
+# Cloudwatch
+###############################################
 
 # create a cloudwatch event that will run on a schedule
 resource "aws_cloudwatch_event_rule" "data_retrieval_timer" { 
-    name = "scripted-data-retrieval-timer-${module.globals.environment_lowercase}"
+    name = "${var.object_name_prefix}-data-retrieval-timer"
     description = "Cron job to get data from Waze periodically"
     schedule_expression = "rate(2 minutes)"
 }
 
-# TODO: create a trigger for the cloudwatch event that can trigger a lambda function
-# resource "aws_cloudwatch_event_target" "data_retrieval_timer_target" { 
-#     rule = "${aws_cloudwatch_event_rule.data_retrieval_timer.name}"
-#     target_id = "data_retrieval_timer_target"
-#     arn  = "${aws_lambda_function.data_retrieval_function.id}"
-# }
+# setup a target for the event
+resource "aws_cloudwatch_event_target" "data_retrieval_timer_target" { 
+    rule = "${aws_cloudwatch_event_rule.data_retrieval_timer.name}"
+    arn  = "${aws_lambda_function.waze_data_retrieval_function.arn}"
+}
+
+# give permission for our lambda to be triggered by cloudwatch event
+resource "aws_lambda_permission" "allow_data_retrieval_timer_target_lambda" {
+  statement_id  = "AllowExecutionFromCloudwatch"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.waze_data_retrieval_function.function_name}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.data_retrieval_timer.arn}"
+}
+
+# TODO: create a cloudwatch alarm to monitor the dead letter queue
+
+# TODO: create a cloudwatch alarm to monitor the work queue (failsafe)
+
+
+###############################################
+# S3
+###############################################
 
 # create the S3 bucket that will store our data files
 # since bucket names have to be globally unique, and we're sharing this script,
 # we'll inject the account id into the name
 data "aws_caller_identity" "current" {}
 resource "aws_s3_bucket" "waze_data_bucket" {
-  bucket = "scripted-waze-data-${data.aws_caller_identity.current.account_id}-${module.globals.environment_lowercase}"
+  bucket = "${var.object_name_prefix}-waze-data-${data.aws_caller_identity.current.account_id}"
 }
+
+###############################################
+# SQS
+###############################################
 
 # create the SQS queue that will track new data
 resource "aws_sqs_queue" "data_processing_queue" {
-    name = "scripted-waze-data-processing-${module.globals.environment_lowercase}"
-    #TODO: fill in more options of the queue
+    name = "${var.object_name_prefix}-waze-data-processing"
+    delay_seconds = "0"
+    receive_wait_time_seconds = "20"
+    visibility_timeout_seconds = "360"
+    redrive_policy = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.data_processing_dead_letter_queue.arn}\",\"maxReceiveCount\":5}"
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
 }
 
-# TODO: create the dead letter queue
+# create the dead letter queue for our main queue
+resource "aws_sqs_queue" "data_processing_dead_letter_queue" {
+    name = "${var.object_name_prefix}-waze-data-processing-dlq"
+    delay_seconds = "0"
+    receive_wait_time_seconds = "0"
+    visibility_timeout_seconds = "30"
+    message_retention_seconds = "1209600" # 14 days
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
+}
 
-# TODO: create a cloudwatch alarm to monitor the dead letter queue
+###############################################
+# SNS TOPICS
+###############################################
 
-# TODO: create an SNS topic that can send notifications when alarm on dead letter queue fires
+# create a topic for the dead letter queue notification
+resource "aws_sns_topic" "data_processing_dlq_sns_topic" {
+    name = "${var.object_name_prefix}-waze-data-processing-dlq-notification"
+    display_name = "${var.object_name_prefix}-waze-data-processing-dlq-notification"
+}
 
-# TODO: create the lambda function that will get data from waze, store it in S3, notify the queue, and start the first round of processing
+# create a topic for the data retrieved notification
+resource "aws_sns_topic" "data_retrieved_sns_topic" {
+    name = "${var.object_name_prefix}-waze-data-retrieved-notification"
+    display_name = "${var.object_name_prefix}-waze-data-retrieved-notification"
+}
+
+# create a topic for the data processed notification
+resource "aws_sns_topic" "data_processed_sns_topic" {
+    name = "${var.object_name_prefix}-waze-data-processed-notification"
+    display_name = "${var.object_name_prefix}-waze-data-processed-notification"
+}
+
+# also need a topic that we'll use to trigger the processor lambda when items are in the queue
+resource "aws_sns_topic" "data_in_queue_alarm_sns_topic" {
+    name = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
+    display_name = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
+}
+
+###############################################
+# IAM
+###############################################
 
 # create a service role for the data retriever lambda function
 resource "aws_iam_role" "data_retrieval_execution_role" {
-    name = "scripted-data-retrieval-execution-role-${module.globals.environment_lowercase}"
+    name = "${var.object_name_prefix}-data-retrieval-execution-role"
     assume_role_policy = <<POLICY
 {
     "Version": "2012-10-17",
@@ -53,8 +120,7 @@ resource "aws_iam_role" "data_retrieval_execution_role" {
             "Effect": "Allow",
             "Principal": {
                 "Service": [
-                    "lambda.amazonaws.com",
-                    "events.amazonaws.com"
+                    "lambda.amazonaws.com"
                 ]
             }
         }
@@ -65,7 +131,7 @@ POLICY
 
 # create a policy to allow access to the data bucket, the queue, and execution of the data processor
 resource "aws_iam_policy" "data_retrieval_resource_access" {
-  name = "scripted-data-and-queue-access-policy-${module.globals.environment_lowercase}"
+  name = "${var.object_name_prefix}-data-and-queue-access-policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -103,4 +169,72 @@ EOF
 resource "aws_iam_role_policy_attachment" "data_retrieval_execution_role_resource_access_attachment" {
     role       = "${aws_iam_role.data_retrieval_execution_role.name}"
     policy_arn = "${aws_iam_policy.data_retrieval_resource_access.arn}"
+}
+
+
+################################################
+# Lambdas
+################################################
+
+# we'll use a dummy lambda deploy zip to get terraform to provision a lambda that we're not ready to deploy yet
+data "archive_file" "dummy_lambda_node_archive" {
+    type = "zip"
+    output_path = "${path.module}/.terraform/archive_files/handler_node.zip"
+    source_content = "console.log('dummy');"
+    source_content_filename = "index.js"
+}
+
+# setup placeholder for data retrieve lambda
+resource "aws_lambda_function" "waze_data_retrieval_function"{
+    # TODO: JRS 2018-02-05 - update this definition to instead pull from artifacts
+    lifecycle {
+      ignore_changes = ["filename", "source_code_hash"] # make sure tf doesn't overwrite the deployed code once we start deploying
+    }
+    function_name = "${var.object_name_prefix}-waze-data-retrieval"
+    runtime = "nodejs6.10"
+    role = "${aws_iam_role.data_retrieval_execution_role.arn}"
+    handler = "waze-data-download.downloadData"
+    filename = "${data.archive_file.dummy_lambda_node_archive.output_path}"
+    timeout = 300
+    memory_size = 256
+    source_code_hash = "${data.archive_file.dummy_lambda_node_archive.output_base64sha256}"
+    environment {
+        variables = {
+            WAZEDATAURL = "${var.waze_data_url}"
+            WAZEDATABUCKET = "${aws_s3_bucket.waze_data_bucket.id}"
+            SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
+            SNSTOPIC = "${var.enable_waze_data_retrieved_sns_topic == "true" ? aws_sns_topic.data_retrieved_sns_topic.arn : "" }"
+        }
+    }
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
+}
+
+# setup placeholder for data processing lambda
+resource "aws_lambda_function" "waze_data_processing_function"{
+    # TODO: JRS 2018-02-05 - update this definition to instead pull from artifacts
+    lifecycle {
+      ignore_changes = ["filename", "source_code_hash"] # make sure tf doesn't overwrite the deployed code once we start deploying
+    }
+    function_name = "${var.object_name_prefix}-waze-data-processing"
+    runtime = "nodejs6.10"
+    role = "${aws_iam_role.data_retrieval_execution_role.arn}"
+    handler = "wazw-data-process.processData"
+    filename = "${data.archive_file.dummy_lambda_node_archive.output_path}"
+    timeout = 300
+    memory_size = 256
+    source_code_hash = "${data.archive_file.dummy_lambda_node_archive.output_base64sha256}"
+    environment {
+        variables = {
+            WAZEDATABUCKET = "${aws_s3_bucket.waze_data_bucket.id}"
+            SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
+            SNSTOPIC = "${var.enable_waze_data_retrieved_sns_topic == "true" ? aws_sns_topic.data_processed_sns_topic.arn : "" }"
+        }
+    }
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
 }

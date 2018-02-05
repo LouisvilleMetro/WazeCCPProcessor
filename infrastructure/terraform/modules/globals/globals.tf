@@ -30,3 +30,5 @@ output "remote_state_bucket_region" { value = "us-east-1" }
 
 # Bucket where artifacts, such as lambda code bundles, are stored
 output "s3_artifacts_bucket" { value = "YOUR ARTIFACT BUCKET NAME HERE" }
+
+output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA URL HERE" }
