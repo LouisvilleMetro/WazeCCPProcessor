@@ -22,16 +22,70 @@ resource "aws_cloudwatch_event_target" "data_retrieval_timer_target" {
 
 # give permission for our lambda to be triggered by cloudwatch event
 resource "aws_lambda_permission" "allow_data_retrieval_timer_target_lambda" {
-  statement_id  = "AllowExecutionFromCloudwatch"
-  action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.waze_data_retrieval_function.function_name}"
-  principal     = "events.amazonaws.com"
-  source_arn    = "${aws_cloudwatch_event_rule.data_retrieval_timer.arn}"
+    statement_id  = "AllowExecutionFromCloudwatch"
+    action        = "lambda:InvokeFunction"
+    function_name = "${aws_lambda_function.waze_data_retrieval_function.function_name}"
+    principal     = "events.amazonaws.com"
+    source_arn    = "${aws_cloudwatch_event_rule.data_retrieval_timer.arn}"
 }
 
-# TODO: create a cloudwatch alarm to monitor the dead letter queue
+# create a cloudwatch alarm to alert on the dead letter queue receiving messages
+resource "aws_cloudwatch_metric_alarm" "processing_dead_letter_queue_alarm" {
+    # we'll only create this alarm if the associated var is true
+    count = "${var.enable_data_processor_dlq_sns_topic == "true" ? 1 : 0}"
+    alarm_name                = "${var.object_name_prefix}-waze-data-processing-dlq-receive-alarm"
+    comparison_operator       = "GreaterThanOrEqualToThreshold"
+    evaluation_periods        = "1"
+    metric_name               = "NumberOfMessagesReceived"
+    namespace                 = "AWS/SQS"
+    dimensions {
+        QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
+    }
+    period                    = "300"
+    statistic                 = "Sum"
+    threshold                 = "1"
+    alarm_description         = "This metric monitors sqs message receipt in the dead letter queue"
+    alarm_actions             = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
+    treat_missing_data        = "notBreaching"
+}
 
-# TODO: create a cloudwatch alarm to monitor the work queue (failsafe)
+# create a cloudwatch alarm to alert on the dead letter queue if items are in it for 24 hours
+resource "aws_cloudwatch_metric_alarm" "processing_dead_letter_queue_has_items_alarm" {
+    # we'll only create this alarm if the associated var is true
+    count = "${var.enable_data_processor_dlq_sns_topic == "true" ? 1 : 0}"
+    alarm_name                = "${var.object_name_prefix}-waze-data-processing-dlq-messages-alarm"
+    comparison_operator       = "GreaterThanOrEqualToThreshold"
+    evaluation_periods        = "1"
+    metric_name               = "ApproximateNumberOfMessagesVisible"
+    namespace                 = "AWS/SQS"
+    dimensions {
+        QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
+    }
+    period                    = "86400" # 24 hours
+    statistic                 = "Minimum"
+    threshold                 = "1"
+    alarm_description         = "This metric monitors sqs messages sitting in the dead letter queue"
+    alarm_actions             = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
+    treat_missing_data        = "notBreaching"
+}
+
+# create a cloudwatch alarm to monitor the work queue
+resource "aws_cloudwatch_metric_alarm" "data_processing_queue_alarm" {
+  alarm_name                = "${var.object_name_prefix}-waze-data-processing-work-queue-alarm"
+  comparison_operator       = "GreaterThanOrEqualToThreshold"
+  evaluation_periods        = "1"
+  metric_name               = "ApproximateNumberOfMessagesVisible"
+  namespace                 = "AWS/SQS"
+  dimensions {
+    QueueName = "${aws_sqs_queue.data_processing_queue.name}"
+  }
+  period                    = "300"
+  statistic                 = "Maximum"
+  threshold                 = "1"
+  alarm_description         = "This metric monitors sqs message visibility"
+  alarm_actions             = ["${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"]
+  treat_missing_data        = "ignore"
+}
 
 
 ###############################################
@@ -43,7 +97,7 @@ resource "aws_lambda_permission" "allow_data_retrieval_timer_target_lambda" {
 # we'll inject the account id into the name
 data "aws_caller_identity" "current" {}
 resource "aws_s3_bucket" "waze_data_bucket" {
-  bucket = "${var.object_name_prefix}-waze-data-${data.aws_caller_identity.current.account_id}"
+    bucket = "${var.object_name_prefix}-waze-data-${data.aws_caller_identity.current.account_id}"
 }
 
 ###############################################
@@ -102,6 +156,22 @@ resource "aws_sns_topic" "data_processed_sns_topic" {
 resource "aws_sns_topic" "data_in_queue_alarm_sns_topic" {
     name = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
     display_name = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
+}
+
+# add a subscription so sns knows to notify lambda
+resource "aws_sns_topic_subscription" "data_processor_starter_trigger" {
+    topic_arn = "${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"
+    protocol = "lambda"
+    endpoint = "${aws_lambda_function.waze_data_processing_function.arn}"
+}
+
+# have to tell lambda that sns can trigger it
+resource "aws_lambda_permission" "allow_sns_trigger_processor_lambda" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.waze_data_processing_function.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"
 }
 
 ###############################################
