@@ -9,10 +9,15 @@ terraform {
 
 ###############################################
 
-# load the environment module
+module "globals" {
+    source = "../../modules/globals"
+    environment = "${var.environment}"
+}
+
+# load the environment module, passing variables when available from the globals output (see globals module readme for the 'why')
 module "environment" {
     source = "../../modules/environment"
-    environment = "Development"
-    default_resource_region = "us-east-1"
-    s3_artifacts_bucket = "bucket where lambda artifacts are stored" # name of the s3 bucket where the lambda function artifacts are stored
+    environment = "${module.globals.environment}"
+    default_resource_region = "${module.globals.default_resource_region}" # see globals.tf to change
+    s3_artifacts_bucket = "${module.globals.s3_artifacts_bucket}" # see globals.tf to change
 }

@@ -5,13 +5,6 @@ provider "aws" {
 
 ###############################################
 
-module "globals" {
-    source = "../globals"
-    environment = "${var.environment}"
-}
-
-###############################################
-
 # create a cloudwatch event that will run on a schedule
 resource "aws_cloudwatch_event_rule" "data_retrieval_timer" { 
     name = "scripted-data-retrieval-timer-${module.globals.environment_lowercase}"

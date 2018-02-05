@@ -5,6 +5,8 @@
 
 - To avoid duplicating backend config all over the place, each root tf file should only specify the state file name.  We'll then use the backend config file at backend/config to specify the parts that never change.  This will will be loaded using the `-backend-config="path to config"` arg when running `terraform init`.
 
+- There are values in both `backend/config` and `modules/globals/globals.tf` that need to be updated to match your setup.  Please refer to other readme files and comments for more info.
+
 
 ## Terraform Example Commands
 
