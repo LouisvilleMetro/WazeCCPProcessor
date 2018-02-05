@@ -1,9 +1,9 @@
 # setup the s3 backend for storing state
+# see config file in backend folder for further required settings
 terraform {
     backend "s3" {
-        bucket = "state management bucket name" # name of the state manangement bucket
-        key = "env-dev-waze-data-processor.tfstate" # name of the state file, unique per environment; could instead tweak it and use workspaces
-        region = "us-east-1" # region where state management bucket resides
+        # name of the state file, unique per environment; could instead tweak it and use workspaces
+        key = "env-dev-waze-data-processor.tfstate" 
     }
 }
 

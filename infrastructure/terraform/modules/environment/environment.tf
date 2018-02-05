@@ -14,7 +14,7 @@ module "globals" {
 
 # create a cloudwatch event that will run on a schedule
 resource "aws_cloudwatch_event_rule" "data_retrieval_timer" { 
-    name = "scripted-data-retrieval-timer-${module.globals.environment_to_lower}"
+    name = "scripted-data-retrieval-timer-${module.globals.environment_lowercase}"
     description = "Cron job to get data from Waze periodically"
     schedule_expression = "rate(2 minutes)"
 }
@@ -31,12 +31,12 @@ resource "aws_cloudwatch_event_rule" "data_retrieval_timer" {
 # we'll inject the account id into the name
 data "aws_caller_identity" "current" {}
 resource "aws_s3_bucket" "waze_data_bucket" {
-  bucket = "scripted-waze-data-${data.aws_caller_identity.current.account_id}-${module.globals.environment_to_lower}"
+  bucket = "scripted-waze-data-${data.aws_caller_identity.current.account_id}-${module.globals.environment_lowercase}"
 }
 
 # create the SQS queue that will track new data
 resource "aws_sqs_queue" "data_processing_queue" {
-    name = "scripted-waze-data-processing-${module.globals.environment_to_lower}"
+    name = "scripted-waze-data-processing-${module.globals.environment_lowercase}"
     #TODO: fill in more options of the queue
 }
 
@@ -50,7 +50,7 @@ resource "aws_sqs_queue" "data_processing_queue" {
 
 # create a service role for the data retriever lambda function
 resource "aws_iam_role" "data_retrieval_execution_role" {
-    name = "scripted-data-retrieval-execution-role-${module.globals.environment_to_lower}"
+    name = "scripted-data-retrieval-execution-role-${module.globals.environment_lowercase}"
     assume_role_policy = <<POLICY
 {
     "Version": "2012-10-17",
@@ -72,7 +72,7 @@ POLICY
 
 # create a policy to allow access to the data bucket, the queue, and execution of the data processor
 resource "aws_iam_policy" "data_retrieval_resource_access" {
-  name = "scripted-data-and-queue-access-policy-${module.globals.environment_to_lower}"
+  name = "scripted-data-and-queue-access-policy-${module.globals.environment_lowercase}"
   policy = <<EOF
 {
   "Version": "2012-10-17",
