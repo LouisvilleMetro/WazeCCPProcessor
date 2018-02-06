@@ -4,7 +4,7 @@ variable "s3_artifacts_bucket" { type = "string" }
 variable "waze_data_url" { type = "string" }
 variable "object_name_prefix" { type = "string"}
 
-variable "enable_waze_data_retrieved_sns_topic" { 
+variable "enable_data_retrieved_sns_topic" { 
     type = "string" # TF doesn't have a true boolean type yet, sorry
     description = "Whether or not we publish to an SNS topic to notify on data retrieved"
 }

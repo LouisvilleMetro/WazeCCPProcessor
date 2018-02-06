@@ -273,7 +273,7 @@ resource "aws_lambda_function" "waze_data_retrieval_function"{
             WAZEDATAURL = "${var.waze_data_url}"
             WAZEDATABUCKET = "${aws_s3_bucket.waze_data_bucket.id}"
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
-            SNSTOPIC = "${var.enable_waze_data_retrieved_sns_topic == "true" ? aws_sns_topic.data_retrieved_sns_topic.arn : "" }"
+            SNSTOPIC = "${var.enable_data_retrieved_sns_topic == "true" ? aws_sns_topic.data_retrieved_sns_topic.arn : "" }"
         }
     }
     tags {
@@ -291,16 +291,16 @@ resource "aws_lambda_function" "waze_data_processing_function"{
     function_name = "${var.object_name_prefix}-waze-data-processing"
     runtime = "nodejs6.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
-    handler = "wazw-data-process.processData"
+    handler = "waze-data-process.processData"
     filename = "${data.archive_file.dummy_lambda_node_archive.output_path}"
     timeout = 300
-    memory_size = 256
+    memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     source_code_hash = "${data.archive_file.dummy_lambda_node_archive.output_base64sha256}"
     environment {
         variables = {
             WAZEDATABUCKET = "${aws_s3_bucket.waze_data_bucket.id}"
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
-            SNSTOPIC = "${var.enable_waze_data_retrieved_sns_topic == "true" ? aws_sns_topic.data_processed_sns_topic.arn : "" }"
+            SNSTOPIC = "${var.enable_data_processed_sns_topic == "true" ? aws_sns_topic.data_processed_sns_topic.arn : "" }"
         }
     }
     tags {
