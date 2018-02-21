@@ -21,7 +21,6 @@ module "environment" {
     object_name_prefix = "${module.globals.object_name_prefix}"
 
     # consider whether you want these on or not and the potential cost impact
-    enable_data_retrieved_sns_topic = "true"
     enable_data_processor_dlq_sns_topic = "true"
     enable_data_processed_sns_topic = "true"
 

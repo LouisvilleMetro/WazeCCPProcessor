@@ -12,6 +12,6 @@
 
 I like to run terraform in an empty directory away from the storage location of the actual files, so that I know I won't accidentally mess anything up or commit things that shouldn't be, so these examples reflect that.  Adjust accordingly for your usage.
 
-terraform get &lt;path to root of terraform scripts&gt;\&lt;environment folder&gt;
+terraform get &lt;path to root of terraform scripts&gt;\\&lt;environment folder&gt;
 
-terraform init -from-module="&lt;path to root of terraform scripts&gt;\&lt;environment folder&gt;" -backend-config="&lt;path to root of terraform scripts&gt;\backend\config"
+terraform init -from-module="&lt;path to root of terraform scripts&gt;\\&lt;environment folder&gt;" -backend-config="&lt;path to root of terraform scripts&gt;\backend\config"

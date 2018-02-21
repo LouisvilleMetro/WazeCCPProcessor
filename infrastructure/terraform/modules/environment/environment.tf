@@ -96,8 +96,23 @@ resource "aws_cloudwatch_metric_alarm" "data_processing_queue_alarm" {
 # since bucket names have to be globally unique, and we're sharing this script,
 # we'll inject the account id into the name
 data "aws_caller_identity" "current" {}
-resource "aws_s3_bucket" "waze_data_bucket" {
-    bucket = "${var.object_name_prefix}-waze-data-${data.aws_caller_identity.current.account_id}"
+resource "aws_s3_bucket" "waze_data_incoming_bucket" {
+    bucket = "${var.object_name_prefix}-waze-data-incoming-${data.aws_caller_identity.current.account_id}"
+}
+
+# setup a notification on the incoming bucket to trigger SNS
+resource "aws_s3_bucket_notification" "waze_data_incoming_bucket_notification" {
+  bucket = "${aws_s3_bucket.waze_data_incoming_bucket.id}"
+
+  topic {
+    topic_arn     = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+    events        = ["s3:ObjectCreated:*"]
+  }
+}
+
+# create a bucket to store the files after processing is done
+resource "aws_s3_bucket" "waze_data_processed_bucket" {
+    bucket = "${var.object_name_prefix}-waze-data-processed-${data.aws_caller_identity.current.account_id}"
 }
 
 ###############################################
@@ -141,9 +156,53 @@ resource "aws_sns_topic" "data_processing_dlq_sns_topic" {
 }
 
 # create a topic for the data retrieved notification
+# this will be triggered by S3, so it needs some setup
 resource "aws_sns_topic" "data_retrieved_sns_topic" {
     name = "${var.object_name_prefix}-waze-data-retrieved-notification"
     display_name = "${var.object_name_prefix}-waze-data-retrieved-notification"
+
+}
+
+resource "aws_sns_topic_policy" "data_retrieved_sns_allow_s3_publish_policy" {
+  arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+
+  policy = <<POLICY
+{
+    "Version":"2012-10-17",
+    "Statement":[{
+        "Effect": "Allow",
+        "Principal": {"AWS":"*"},
+        "Action": "SNS:Publish",
+        "Resource": "${aws_sns_topic.data_retrieved_sns_topic.arn}",
+        "Condition":{
+            "ArnLike":{"aws:SourceArn":"${aws_s3_bucket.waze_data_incoming_bucket.arn}"}
+        }
+    }]
+}
+POLICY
+}
+
+# add subscription to notify SQS when message published to topic
+resource "aws_sns_topic_subscription" "data_retrieved_sqs_subscription" {
+    topic_arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+    protocol = "sqs"
+    endpoint = "${aws_sqs_queue.data_processing_queue.arn}"
+}
+
+# add subscription to notify lambda when message published to topic
+resource "aws_sns_topic_subscription" "data_retrieved_lambda_subscription" {
+    topic_arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+    protocol = "lambda"
+    endpoint = "${aws_lambda_function.waze_data_processing_function.arn}"
+}
+
+# have to tell lambda that sns can trigger it
+resource "aws_lambda_permission" "allow_sns_data_retrieved_topic_trigger_processor_lambda" {
+  statement_id  = "AllowExecutionFromSNSDataRetrieved"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.waze_data_processing_function.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
 }
 
 # create a topic for the data processed notification
@@ -167,7 +226,7 @@ resource "aws_sns_topic_subscription" "data_processor_starter_trigger" {
 
 # have to tell lambda that sns can trigger it
 resource "aws_lambda_permission" "allow_sns_trigger_processor_lambda" {
-  statement_id  = "AllowExecutionFromSNS"
+  statement_id  = "AllowExecutionFromSNSAlarmTrigger"
   action        = "lambda:InvokeFunction"
   function_name = "${aws_lambda_function.waze_data_processing_function.function_name}"
   principal     = "sns.amazonaws.com"
@@ -215,8 +274,10 @@ resource "aws_iam_policy" "data_retrieval_resource_access" {
       ],
       "Effect": "Allow",
       "Resource": [
-          "${aws_s3_bucket.waze_data_bucket.arn}/",
-          "${aws_s3_bucket.waze_data_bucket.arn}/*"
+          "${aws_s3_bucket.waze_data_incoming_bucket.arn}",
+          "${aws_s3_bucket.waze_data_incoming_bucket.arn}/*",
+          "${aws_s3_bucket.waze_data_processed_bucket.arn}",
+          "${aws_s3_bucket.waze_data_processed_bucket.arn}/*"
       ]
     },
     {
@@ -241,6 +302,12 @@ resource "aws_iam_role_policy_attachment" "data_retrieval_execution_role_resourc
     policy_arn = "${aws_iam_policy.data_retrieval_resource_access.arn}"
 }
 
+# also need to attach the lambda basic role, so it can do useful things like logging
+resource "aws_iam_role_policy_attachment" "data_retrieval_lambda_basic_logging_role_policy_attachment" {
+    role       = "${aws_iam_role.data_retrieval_execution_role.name}"
+    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
 
 ################################################
 # Lambdas
@@ -250,8 +317,8 @@ resource "aws_iam_role_policy_attachment" "data_retrieval_execution_role_resourc
 data "archive_file" "dummy_lambda_node_archive" {
     type = "zip"
     output_path = "${path.module}/.terraform/archive_files/handler_node.zip"
-    source_content = "console.log('dummy');"
-    source_content_filename = "index.js"
+    source_content = "exports.downloadData = (event, context, callback) => { console.log('dummy'); };"
+    source_content_filename = "waze-data-download.js"
 }
 
 # setup placeholder for data retrieve lambda
@@ -271,9 +338,8 @@ resource "aws_lambda_function" "waze_data_retrieval_function"{
     environment {
         variables = {
             WAZEDATAURL = "${var.waze_data_url}"
-            WAZEDATABUCKET = "${aws_s3_bucket.waze_data_bucket.id}"
+            WAZEDATABUCKET = "${aws_s3_bucket.waze_data_incoming_bucket.id}"
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
-            SNSTOPIC = "${var.enable_data_retrieved_sns_topic == "true" ? aws_sns_topic.data_retrieved_sns_topic.arn : "" }"
         }
     }
     tags {
@@ -298,7 +364,8 @@ resource "aws_lambda_function" "waze_data_processing_function"{
     source_code_hash = "${data.archive_file.dummy_lambda_node_archive.output_base64sha256}"
     environment {
         variables = {
-            WAZEDATABUCKET = "${aws_s3_bucket.waze_data_bucket.id}"
+            WAZEDATAINCOMINGBUCKET = "${aws_s3_bucket.waze_data_incoming_bucket.id}"
+            WAZEDATAPROCESSEDBUCKET = "${aws_s3_bucket.waze_data_processed_bucket.id}"
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
             SNSTOPIC = "${var.enable_data_processed_sns_topic == "true" ? aws_sns_topic.data_processed_sns_topic.arn : "" }"
         }
