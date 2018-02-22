@@ -461,7 +461,7 @@ resource "aws_db_subnet_group" "waze_db_subnet_group" {
 }
 
 # create an aurora postegres cluster to add our rds instance to
-resource "aws_rds_cluster" "waze_database" {
+resource "aws_rds_cluster" "waze_database_cluster" {
     cluster_identifier = "${var.object_name_prefix}-waze-data-aurora-cluster"
     engine = "aurora-postgresql"
     database_name = "waze_data"
@@ -474,4 +474,20 @@ resource "aws_rds_cluster" "waze_database" {
     #vpc_security_group_ids
     storage_encrypted = false # not encrypted because it isn't really sensitive
     db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
+    final_snapshot_identifier = "${var.object_name_prefix}-db-final-snapshot"
+}
+
+# create the actual DB instance
+resource "aws_rds_cluster_instance" "waze_database_instances" {
+  count              = 1 # keeping this here, set to 1, in case someone wants to easily increase it (expensive, though)
+  identifier         = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
+  cluster_identifier = "${aws_rds_cluster.waze_database_cluster.id}"
+  instance_class     = "db.r4.large"
+  publicly_accessible = true
+  db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
+
+  tags {
+    Name = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
+    Environment = "${var.environment}"
+  }
 }
