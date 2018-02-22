@@ -375,3 +375,71 @@ resource "aws_lambda_function" "waze_data_processing_function"{
         Scripted = "true"
     }
 }
+
+################################################
+# VPC
+################################################
+
+# in order to ensure that standing this up can't possibly run afoul of any existing infrastructure
+# we'll opt to setup its own VPC and related items so that we can hopefully limit pain and suffering
+# of any security folks
+
+# we'll need to know what AZs are available in the region
+data "aws_availability_zones" "available" {
+    state = "available"
+}
+
+# create the VPC
+resource "aws_vpc" "waze_vpc" {
+    cidr_block = "${var.rds_vpc_cidr_block}"
+    instance_tenancy = "default"
+
+    tags {
+        Name = "${var.object_name_prefix}-waze-vpc"
+        Environment = "${var.environment}"
+    }
+}
+
+# create the subnets
+locals {
+    # need the netmask of the rds cidr so we can calculate subnets
+	rds_vpc_cidr_block_netmask = "${element(split("/", var.rds_vpc_cidr_block), 1)}"
+}
+
+resource "aws_subnet" "waze_subnets" {
+    count = "3"
+    vpc_id = "${aws_vpc.waze_vpc.id}"
+    # calculate a /24 cidr inside our rds vpc
+    cidr_block = "${cidrsubnet(var.rds_vpc_cidr_block, 24 - local.netmask, ${count.index})}"
+    availability_zone = "${data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]}"
+
+    tags {
+        Name = "${var.object_name_prefix}-waze-subnet-${format("%02d", count.index + 1)}"
+        Environment = "${var.environment}"
+    }
+}
+
+# create the internet gateway
+resource "aws_internet_gateway" "waze_gateway" {
+    vpc_id = "${aws_vpc.waze_vpc.id}"
+
+    tags {
+        Name = "${var.object_name_prefix}-waze-internet-gateway"
+        Environment = "${var.environment}"
+    }
+}
+
+# create the route table
+resource "aws_route_table" "waze_vpc_routes" {
+    vpc_id = "${aws_vpc.waze_vpc.id}"
+
+    route {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = "${aws_internet_gateway.waze_gateway.id}"
+    }
+
+    tags {
+        Name = "${var.object_name_prefix}-waze-route-table"
+        Environment = "${var.environment}"
+    }
+}
