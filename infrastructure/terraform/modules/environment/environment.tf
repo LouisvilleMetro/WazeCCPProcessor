@@ -410,7 +410,7 @@ resource "aws_subnet" "waze_subnets" {
     count = "3"
     vpc_id = "${aws_vpc.waze_vpc.id}"
     # calculate a /24 cidr inside our rds vpc
-    cidr_block = "${cidrsubnet(var.rds_vpc_cidr_block, 24 - local.netmask, ${count.index})}"
+    cidr_block = "${cidrsubnet(var.rds_vpc_cidr_block, 24 - local.rds_vpc_cidr_block_netmask, count.index)}"
     availability_zone = "${data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]}"
 
     tags {
@@ -443,3 +443,32 @@ resource "aws_route_table" "waze_vpc_routes" {
         Environment = "${var.environment}"
     }
 }
+
+
+################################################
+# RDS
+################################################
+
+# create db subnet groups
+resource "aws_db_subnet_group" "waze_db_subnet_group" {
+  name       = "${var.object_name_prefix}-waze-db-subnet-group"
+  subnet_ids = ["${aws_subnet.waze_subnets.*.id}"]
+
+  tags {
+    Name = "${var.object_name_prefix}-waze-db-subnet-group"
+    Environment = "${var.environment}"
+  }
+}
+
+# resource "aws_rds_cluster" "waze_database" {
+#     cluster_identifier = "${var.object_name_prefix}-waze-data-aurora-cluster"
+#     engine = "aurora-postgresql"
+#     database_name = "waze-data"
+#     master_username = "${var.rds_master_username}"
+#     master_password = "${var.rds_master_password}"
+#     backup_retention_period = 7
+#     preferred_backup_window = "06:00-08:00"
+
+#     availability_zones      = ["us-west-2a", "us-west-2b", "us-west-2c"]
+    
+# }

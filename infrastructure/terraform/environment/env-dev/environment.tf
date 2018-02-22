@@ -27,4 +27,6 @@ module "environment" {
     default_resource_region = "${module.globals.default_resource_region}" # see globals.tf to change
     s3_artifacts_bucket = "${module.globals.s3_artifacts_bucket}" # see globals.tf to change
     waze_data_url = "${module.globals.waze_data_url}" # see globals.tf to change
+    rds_master_username = "${module.globals.rds_master_username}" # see globals.tf to change
+    rds_master_password = "${module.globals.rds_master_password}" # see globals.tf to change
 }

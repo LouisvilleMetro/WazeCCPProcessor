@@ -26,3 +26,7 @@ output "default_resource_region" { value = "us-east-1" }
 output "s3_artifacts_bucket" { value = "YOUR ARTIFACT BUCKET NAME HERE" }
 
 output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA URL HERE" }
+
+output "rds_master_username" { value = "YOUR DESIRED USER NAME HERE" }
+
+output "rds_master_password" { value = "YOUR DESIRED PASSWORD HERE" }
