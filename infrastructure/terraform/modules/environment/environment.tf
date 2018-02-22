@@ -460,15 +460,18 @@ resource "aws_db_subnet_group" "waze_db_subnet_group" {
   }
 }
 
-# resource "aws_rds_cluster" "waze_database" {
-#     cluster_identifier = "${var.object_name_prefix}-waze-data-aurora-cluster"
-#     engine = "aurora-postgresql"
-#     database_name = "waze-data"
-#     master_username = "${var.rds_master_username}"
-#     master_password = "${var.rds_master_password}"
-#     backup_retention_period = 7
-#     preferred_backup_window = "06:00-08:00"
-
-#     availability_zones      = ["us-west-2a", "us-west-2b", "us-west-2c"]
-    
-# }
+# create an aurora postegres cluster to add our rds instance to
+resource "aws_rds_cluster" "waze_database" {
+    cluster_identifier = "${var.object_name_prefix}-waze-data-aurora-cluster"
+    engine = "aurora-postgresql"
+    database_name = "waze_data"
+    master_username = "${var.rds_master_username}"
+    master_password = "${var.rds_master_password}"
+    backup_retention_period = 3 # short because all the data could be regenerated easily
+    preferred_backup_window = "02:00-04:00"
+    preferred_maintenance_window = "wed:05:00-wed:06:00"
+    port = "${var.rds_port}"
+    #vpc_security_group_ids
+    storage_encrypted = false # not encrypted because it isn't really sensitive
+    db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
+}
