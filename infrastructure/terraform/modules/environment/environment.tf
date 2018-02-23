@@ -430,9 +430,9 @@ resource "aws_internet_gateway" "waze_gateway" {
     }
 }
 
-# create the route table
-resource "aws_route_table" "waze_vpc_routes" {
-    vpc_id = "${aws_vpc.waze_vpc.id}"
+# adjust the default route table
+resource "aws_default_route_table" "waze_vpc_routes" {
+    default_route_table_id = "${aws_vpc.waze_vpc.default_route_table_id}"
 
     route {
         cidr_block = "0.0.0.0/0"
@@ -445,6 +445,25 @@ resource "aws_route_table" "waze_vpc_routes" {
     }
 }
 
+# need a security group to allow traffic to the db
+# TODO: JRS 2018-02-23 - probably want to rethink this later and lock down more
+resource "aws_security_group" "allow_postgres_traffic" {
+    name = "${var.object_name_prefix}-waze-db-security-group"
+    description = "Allow postgres ingress"
+    vpc_id = "${aws_vpc.waze_vpc.id}"
+    # allow postgres port
+    ingress {
+        from_port = "${var.rds_port}"
+        to_port = "${var.rds_port}"
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+        description = "Allow Postgres from anywhere"
+    }
+    tags {
+        Name = "${var.object_name_prefix}-waze-db-security-group"
+        Environment = "${var.environment}"
+    }
+}
 
 ################################################
 # RDS
@@ -472,7 +491,7 @@ resource "aws_rds_cluster" "waze_database_cluster" {
     preferred_backup_window = "02:00-04:00"
     preferred_maintenance_window = "wed:05:00-wed:06:00"
     port = "${var.rds_port}"
-    #vpc_security_group_ids
+    vpc_security_group_ids = ["${aws_security_group.allow_postgres_traffic.id}"]
     storage_encrypted = false # not encrypted because it isn't really sensitive
     db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
     final_snapshot_identifier = "${var.object_name_prefix}-db-final-snapshot"
