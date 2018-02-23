@@ -393,6 +393,7 @@ data "aws_availability_zones" "available" {
 resource "aws_vpc" "waze_vpc" {
     cidr_block = "${var.rds_vpc_cidr_block}"
     instance_tenancy = "default"
+    enable_dns_hostnames = true
 
     tags {
         Name = "${var.object_name_prefix}-waze-vpc"
@@ -485,6 +486,7 @@ resource "aws_rds_cluster_instance" "waze_database_instances" {
   instance_class     = "db.r4.large"
   publicly_accessible = true
   db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
+  engine = "aurora-postgresql"
 
   tags {
     Name = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
