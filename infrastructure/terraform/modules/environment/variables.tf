@@ -30,3 +30,14 @@ variable "enable_data_processed_sns_topic" {
     description = "Whether or not we publish to an SNS topic to notify on queue records successfully processed"
 }
 
+variable "skip_final_db_snapshot_on_destroy" { 
+    type = "string" # TF doesn't have a true boolean type yet, sorry
+    description = "Whether or not skip taking a final DB snapshot when destroying the stack"
+}
+
+variable "empty_s3_buckets_before_destroy" { 
+    type = "string" # TF doesn't have a true boolean type yet, sorry
+    description = "Whether or not to delete everything in the buckets on destruction, so they can be destroyed without error"
+}
+
+

@@ -1,0 +1,15 @@
+{
+  "name": "waze-data-process",
+  "version": "1.0.0",
+  "description": "",
+  "main": "waze-data-process.js",
+  "dependencies": {
+    "aws-sdk": "^2.203.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

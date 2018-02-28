@@ -7,6 +7,8 @@
 
 - There are values in both `backend/config` and `modules/globals/globals.tf` that need to be updated to match your setup.  Please refer to other readme files and comments for more info.
 
+- **IMPORTANT** - This config stands up infrastructure that is mostly cheap/free (depending on usage), but the database itself is pretty powerful and will result in monthly charges in excess of $200 (as of this writing).
+
 
 ## Terraform Example Commands
 

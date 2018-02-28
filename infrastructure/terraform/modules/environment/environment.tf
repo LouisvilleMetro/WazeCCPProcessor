@@ -98,6 +98,7 @@ resource "aws_cloudwatch_metric_alarm" "data_processing_queue_alarm" {
 data "aws_caller_identity" "current" {}
 resource "aws_s3_bucket" "waze_data_incoming_bucket" {
     bucket = "${var.object_name_prefix}-waze-data-incoming-${data.aws_caller_identity.current.account_id}"
+    force_destroy = "${var.empty_s3_buckets_before_destroy}"
 }
 
 # setup a notification on the incoming bucket to trigger SNS
@@ -113,6 +114,7 @@ resource "aws_s3_bucket_notification" "waze_data_incoming_bucket_notification" {
 # create a bucket to store the files after processing is done
 resource "aws_s3_bucket" "waze_data_processed_bucket" {
     bucket = "${var.object_name_prefix}-waze-data-processed-${data.aws_caller_identity.current.account_id}"
+    force_destroy = "${var.empty_s3_buckets_before_destroy}"
 }
 
 ###############################################
@@ -130,6 +132,31 @@ resource "aws_sqs_queue" "data_processing_queue" {
         Environment = "${var.environment}"
         Scripted = "true"
     }
+}
+
+# create a policy that will allow sns to push messages to the queue
+resource "aws_sqs_queue_policy" "data_processing_queue_policy" {
+    queue_url = "${aws_sqs_queue.data_processing_queue.id}"
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "sqspolicy",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "sqs:SendMessage",
+      "Resource": "${aws_sqs_queue.data_processing_queue.arn}",
+      "Condition": {
+        "ArnEquals": {
+          "aws:SourceArn": "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+        }
+      }
+    }
+  ]
+}
+POLICY
 }
 
 # create the dead letter queue for our main queue
@@ -313,28 +340,24 @@ resource "aws_iam_role_policy_attachment" "data_retrieval_lambda_basic_logging_r
 # Lambdas
 ################################################
 
-# we'll use a dummy lambda deploy zip to get terraform to provision a lambda that we're not ready to deploy yet
-data "archive_file" "dummy_lambda_node_archive" {
-    type = "zip"
-    output_path = "${path.module}/.terraform/archive_files/handler_node.zip"
-    source_content = "exports.downloadData = (event, context, callback) => { console.log('dummy'); };"
-    source_content_filename = "waze-data-download.js"
+# get info about the artifact for the data retrieval lambda
+data "aws_s3_bucket_object" "waze_data_retrieval_function_artifact" {
+  bucket = "${var.s3_artifacts_bucket}"
+  key    = "waze-data-download.zip"
 }
 
-# setup placeholder for data retrieve lambda
+# setup data retrieve lambda
 resource "aws_lambda_function" "waze_data_retrieval_function"{
-    # TODO: JRS 2018-02-05 - update this definition to instead pull from artifacts
-    lifecycle {
-      ignore_changes = ["filename", "source_code_hash"] # make sure tf doesn't overwrite the deployed code once we start deploying
-    }
+    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_retrieval_function_artifact.bucket}"
+    s3_key            = "${data.aws_s3_bucket_object.waze_data_retrieval_function_artifact.key}"
+    s3_object_version = "${data.aws_s3_bucket_object.waze_data_retrieval_function_artifact.version_id}"
+
     function_name = "${var.object_name_prefix}-waze-data-retrieval"
     runtime = "nodejs6.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-download.downloadData"
-    filename = "${data.archive_file.dummy_lambda_node_archive.output_path}"
     timeout = 300
     memory_size = 256
-    source_code_hash = "${data.archive_file.dummy_lambda_node_archive.output_base64sha256}"
     environment {
         variables = {
             WAZEDATAURL = "${var.waze_data_url}"
@@ -348,20 +371,23 @@ resource "aws_lambda_function" "waze_data_retrieval_function"{
     }
 }
 
-# setup placeholder for data processing lambda
+# get info about the artifact for the data retrieval lambda
+data "aws_s3_bucket_object" "waze_data_processing_function_artifact" {
+  bucket = "${var.s3_artifacts_bucket}"
+  key    = "waze-data-process.zip"
+}
+
+# setup data processing lambda
 resource "aws_lambda_function" "waze_data_processing_function"{
-    # TODO: JRS 2018-02-05 - update this definition to instead pull from artifacts
-    lifecycle {
-      ignore_changes = ["filename", "source_code_hash"] # make sure tf doesn't overwrite the deployed code once we start deploying
-    }
+    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
+    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
+    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
     function_name = "${var.object_name_prefix}-waze-data-processing"
     runtime = "nodejs6.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-process.processData"
-    filename = "${data.archive_file.dummy_lambda_node_archive.output_path}"
     timeout = 300
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
-    source_code_hash = "${data.archive_file.dummy_lambda_node_archive.output_base64sha256}"
     environment {
         variables = {
             WAZEDATAINCOMINGBUCKET = "${aws_s3_bucket.waze_data_incoming_bucket.id}"
@@ -495,6 +521,7 @@ resource "aws_rds_cluster" "waze_database_cluster" {
     storage_encrypted = false # not encrypted because it isn't really sensitive
     db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
     final_snapshot_identifier = "${var.object_name_prefix}-db-final-snapshot"
+    skip_final_snapshot = "${var.skip_final_db_snapshot_on_destroy}"
 }
 
 # create the actual DB instance

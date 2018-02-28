@@ -24,6 +24,11 @@ module "environment" {
     enable_data_processor_dlq_sns_topic = "true"
     enable_data_processed_sns_topic = "true"
 
+    # don't do this for production environments, but ok to skip it for dev 
+    skip_final_db_snapshot_on_destroy = "true"
+    # likewise for this one
+    empty_s3_buckets_before_destroy = "true"
+
     default_resource_region = "${module.globals.default_resource_region}" # see globals.tf to change
     s3_artifacts_bucket = "${module.globals.s3_artifacts_bucket}" # see globals.tf to change
     waze_data_url = "${module.globals.waze_data_url}" # see globals.tf to change
