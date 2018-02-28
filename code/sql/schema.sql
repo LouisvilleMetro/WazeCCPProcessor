@@ -16,7 +16,28 @@ CREATE TABLE waze.jams
   "length"              INTEGER,
   "turn_type"           VARCHAR[500],
   "level"               INTEGER,
-  "blocking_alert_id"   BIGINT
+  "blocking_alert_id"   VARCHAR[500]
+);
+
+CREATE TABLE waze.alerts 
+(
+  "id"                            BIGINT PRIMARY KEY NOT NULL,
+  "uuid"                          VARCHAR[500] NOT NULL, 
+  "pub_millis"                    BIGINT NOT NULL,
+  "road_type"                     INTEGER,
+  "street"                        VARCHAR[500],
+  "city"                          VARCHAR[500],
+  "country"                       VARCHAR[500],
+  "magvar"                        INTEGER,
+  "reliability"                   INTEGER,
+  "report_description"            VARCHAR[500],
+  "report_rating"                 INTEGER,
+  "type"                          VARCHAR[500],
+  "subtype"                       VARCHAR[500],
+  "report_by_municipality_user"   BOOLEAN,
+  "thumbs_up"                     INTEGER,
+  "jam_id"                        VARCHAR[500] REFERENCES waze.jams (uuid),
+  "irregularity_id"               VARCHAR[500] REFERENCES waze.irregularities (uuid)
 );
 
 CREATE TABLE waze.irregularities 
@@ -47,26 +68,6 @@ CREATE TABLE waze.irregularities
   "n_images"                INTEGER
 );
 
-CREATE TABLE waze.alerts 
-(
-  "id"                            BIGINT PRIMARY KEY NOT NULL,
-  "uuid"                          VARCHAR[500] NOT NULL,
-  "pub_millis"                    BIGINT NOT NULL,
-  "road_type"                     INTEGER,
-  "street"                        VARCHAR[500],
-  "city"                          VARCHAR[500],
-  "country"                       VARCHAR[500],
-  "magvar"                        INTEGER,
-  "reliability"                   INTEGER,
-  "report_description"            VARCHAR[500],
-  "report_rating"                 INTEGER,
-  "type"                          VARCHAR[500],
-  "subtype"                       VARCHAR[500],
-  "report_by_municipality_user"   BOOLEAN,
-  "thumbs_up"                     INTEGER,
-  "jam_id"                        BIGINT REFERENCES waze.jams (id),
-  "irregularity_id"               BIGINT REFERENCES waze.irregularities (id)
-);
 
 CREATE TABLE waze.coordinates 
 (
@@ -83,7 +84,7 @@ CREATE TABLE waze.roads
 (
   "id"      INTEGER PRIMARY KEY NOT NULL,
   "value"   INTEGER NOT NULL,
-  "name"    VARCHAR(100) NOT NULL
+  "name"    VARCHAR[100] NOT NULL
 );
 
 CREATE TABLE waze.alert_types 
