@@ -1,5 +1,14 @@
 CREATE SCHEMA waze;
 
+CREATE TABLE waze.signals
+(
+"id"                                BIGINT PRIMARY KEY NOT NULL,
+"date_start"                        TIMESTAMP WITH TIME ZONE,
+"date_end"                          TIMESTAMP WITH TIME ZONE,
+CONSTRAINT "unique_date_start"      UNIQUE("date_start"),
+CONSTRAINT "unique_date_end"      UNIQUE("date_end")
+);
+
 CREATE TABLE waze.jams 
 (
   "id"                  BIGINT PRIMARY KEY NOT NULL,
@@ -18,6 +27,28 @@ CREATE TABLE waze.jams
   "level"               INTEGER,
   "blocking_alert_id"   VARCHAR[500]
 );
+
+    id = Column("JamId", Integer, primary_key=True)
+    object_id = Column("JamObjectId", Unicode)
+    dateStart = Column("JamDateStart", DateTime(timezone=True),
+                       ForeignKey("MongoRecord.MgrcDateStart", ondelete="CASCADE"), nullable=False)
+    dateEnd = Column("JamDateEnd", DateTime(timezone=True))
+    city = Column("JamDscCity", Unicode)
+    coords = Column("JamDscCoordinatesLonLat", typeJSON)
+    roadType = Column("JamDscRoadType", Integer)
+    segments = Column("JamDscSegments", typeJSON)
+    street = Column("JamDscStreet", Unicode)
+    endNode = Column("JamDscStreetEndNode", Unicode)
+    turnType = Column("JamDscTurnType", Unicode)
+    jam_type = Column("JamDscType", Unicode)
+    level = Column("JamIndLevelOfTraffic", Integer)
+    length = Column("JamQtdLengthMeters", Integer)
+    speed = Column("JamSpdMetersPerSecond", Float)
+    delay = Column("JamTimeDelayInSeconds", Integer)
+    pubMillis = Column("JamTimePubMillis", BigInteger)
+    uuid = Column("JamUuid", Integer)
+    
+    __table_args__ = (UniqueConstraint("JamDateStart", "JamUuid", name="JamDateUuid"),)
 
 CREATE TABLE waze.alerts 
 (
