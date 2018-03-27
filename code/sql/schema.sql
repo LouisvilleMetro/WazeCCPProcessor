@@ -3,52 +3,32 @@ CREATE SCHEMA waze;
 CREATE TABLE waze.signals
 (
 "id"                                BIGINT PRIMARY KEY NOT NULL,
+"startTimeMillis"                   BIGINT UNIQUE NOT NULL,
+"endTimeMillis"                     BIGINT NOT NULL,
 "date_start"                        TIMESTAMP WITH TIME ZONE,
-"date_end"                          TIMESTAMP WITH TIME ZONE,
-CONSTRAINT "unique_date_start"      UNIQUE("date_start"),
-CONSTRAINT "unique_date_end"      UNIQUE("date_end")
+"date_end"                          TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE waze.jams 
 (
-  "id"                  BIGINT PRIMARY KEY NOT NULL,
-  "uuid"                VARCHAR[500] NOT NULL,
-  "pub_millis"          BIGINT NOT NULL,
-  "start_node"          VARCHAR[500],
-  "end_node"            VARCHAR[500],
-  "road_type"           INTEGER,
-  "street"              VARCHAR[500],
-  "city"                VARCHAR[500],
-  "country"             VARCHAR[500],
-  "delay"               INTEGER,
-  "speed"               float4,
-  "length"              INTEGER,
-  "turn_type"           VARCHAR[500],
-  "level"               INTEGER,
-  "blocking_alert_id"   VARCHAR[500]
+  "id"                              BIGINT PRIMARY KEY NOT NULL,
+  "uuid"                            VARCHAR[500] NOT NULL,
+  "pub_millis"                      BIGINT NOT NULL,
+  "start_node"                      VARCHAR[500],
+  "end_node"                        VARCHAR[500],
+  "road_type"                       INTEGER,
+  "street"                          VARCHAR[500],
+  "city"                            VARCHAR[500],
+  "country"                         VARCHAR[500],
+  "delay"                           INTEGER,
+  "speed"                           float4,
+  "length"                          INTEGER,
+  "turn_type"                       VARCHAR[500],
+  "level"                           INTEGER,
+  "blocking_alert_id"               VARCHAR[500],
+  "coordinates"                     JSON,
+  "signal_id"                       BIGINT NOT NULL REFERENCES waze.signals (id)
 );
-
-    id = Column("JamId", Integer, primary_key=True)
-    object_id = Column("JamObjectId", Unicode)
-    dateStart = Column("JamDateStart", DateTime(timezone=True),
-                       ForeignKey("MongoRecord.MgrcDateStart", ondelete="CASCADE"), nullable=False)
-    dateEnd = Column("JamDateEnd", DateTime(timezone=True))
-    city = Column("JamDscCity", Unicode)
-    coords = Column("JamDscCoordinatesLonLat", typeJSON)
-    roadType = Column("JamDscRoadType", Integer)
-    segments = Column("JamDscSegments", typeJSON)
-    street = Column("JamDscStreet", Unicode)
-    endNode = Column("JamDscStreetEndNode", Unicode)
-    turnType = Column("JamDscTurnType", Unicode)
-    jam_type = Column("JamDscType", Unicode)
-    level = Column("JamIndLevelOfTraffic", Integer)
-    length = Column("JamQtdLengthMeters", Integer)
-    speed = Column("JamSpdMetersPerSecond", Float)
-    delay = Column("JamTimeDelayInSeconds", Integer)
-    pubMillis = Column("JamTimePubMillis", BigInteger)
-    uuid = Column("JamUuid", Integer)
-    
-    __table_args__ = (UniqueConstraint("JamDateStart", "JamUuid", name="JamDateUuid"),)
 
 CREATE TABLE waze.alerts 
 (
@@ -67,8 +47,7 @@ CREATE TABLE waze.alerts
   "subtype"                       VARCHAR[500],
   "report_by_municipality_user"   BOOLEAN,
   "thumbs_up"                     INTEGER,
-  "jam_id"                        VARCHAR[500] REFERENCES waze.jams (uuid),
-  "irregularity_id"               VARCHAR[500] REFERENCES waze.irregularities (uuid)
+  "signal_id"                     BIGINT NOT NULL REFERENCES waze.signals (id)
 );
 
 CREATE TABLE waze.irregularities 
@@ -96,7 +75,8 @@ CREATE TABLE waze.irregularities
   "alerts_count"            INTEGER,
   "n_thumbs_up"             INTEGER,
   "n_comments"              INTEGER,
-  "n_images"                INTEGER
+  "n_images"                INTEGER,
+  "signal_id"               BIGINT NOT NULL REFERENCES waze.signals (id)
 );
 
 
@@ -124,4 +104,3 @@ CREATE TABLE waze.alert_types
   "type"      VARCHAR[500] NOT NULL,
   "subtype"   VARCHAR[500]
 );
-
