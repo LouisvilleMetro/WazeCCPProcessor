@@ -394,6 +394,10 @@ resource "aws_lambda_function" "waze_data_processing_function"{
             WAZEDATAPROCESSEDBUCKET = "${aws_s3_bucket.waze_data_processed_bucket.id}"
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
             SNSTOPIC = "${var.enable_data_processed_sns_topic == "true" ? aws_sns_topic.data_processed_sns_topic.arn : "" }"
+            ALERTPROCESSORARN = "${aws_lambda_function.waze_data_alerts_processing_function.arn}"
+            JAMPROCESSORARN = "${aws_lambda_function.waze_data_jams_processing_function.arn}"
+            IRREGULARITYPROCESSORARN = "${aws_lambda_function.waze_data_irregularities_processing_function.arn}"
+            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
         }
     }
     tags {
