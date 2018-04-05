@@ -371,7 +371,7 @@ resource "aws_lambda_function" "waze_data_retrieval_function"{
     }
 }
 
-# get info about the artifact for the data retrieval lambda
+# get info about the artifact for the data processing lambda
 data "aws_s3_bucket_object" "waze_data_processing_function_artifact" {
   bucket = "${var.s3_artifacts_bucket}"
   key    = "waze-data-process.zip"
@@ -385,7 +385,7 @@ resource "aws_lambda_function" "waze_data_processing_function"{
     function_name = "${var.object_name_prefix}-waze-data-processing"
     runtime = "nodejs6.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
-    handler = "waze-data-process.processData"
+    handler = "waze-data-process.processDataFile"
     timeout = 300
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
@@ -394,6 +394,72 @@ resource "aws_lambda_function" "waze_data_processing_function"{
             WAZEDATAPROCESSEDBUCKET = "${aws_s3_bucket.waze_data_processed_bucket.id}"
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
             SNSTOPIC = "${var.enable_data_processed_sns_topic == "true" ? aws_sns_topic.data_processed_sns_topic.arn : "" }"
+        }
+    }
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
+}
+
+# setup alert processing lambda
+resource "aws_lambda_function" "waze_data_alerts_processing_function"{
+    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
+    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
+    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
+    function_name = "${var.object_name_prefix}-waze-data-alerts-processing"
+    runtime = "nodejs6.10"
+    role = "${aws_iam_role.data_retrieval_execution_role.arn}"
+    handler = "waze-data-process.processDataAlerts"
+    timeout = 300
+    memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
+    environment {
+        variables = {
+            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+        }
+    }
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
+}
+
+# setup jams processing lambda
+resource "aws_lambda_function" "waze_data_jams_processing_function"{
+    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
+    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
+    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
+    function_name = "${var.object_name_prefix}-waze-data-jams-processing"
+    runtime = "nodejs6.10"
+    role = "${aws_iam_role.data_retrieval_execution_role.arn}"
+    handler = "waze-data-process.processDataJams"
+    timeout = 300
+    memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
+    environment {
+        variables = {
+            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+        }
+    }
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
+}
+
+# setup irregularities processing lambda
+resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
+    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
+    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
+    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
+    function_name = "${var.object_name_prefix}-waze-data-irregularities-processing"
+    runtime = "nodejs6.10"
+    role = "${aws_iam_role.data_retrieval_execution_role.arn}"
+    handler = "waze-data-process.processDataIrregularities"
+    timeout = 300
+    memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
+    environment {
+        variables = {
+            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
         }
     }
     tags {
