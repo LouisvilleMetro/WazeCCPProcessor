@@ -3,15 +3,15 @@ CREATE SCHEMA waze;
 CREATE TABLE waze.data_files
 (
 "id"                                SERIAL PRIMARY KEY NOT NULL,
-"startTimeMillis"                   BIGINT NOT NULL,
-"endTimeMillis"                     BIGINT NOT NULL,
-"startTime"                         TIMESTAMP,
-"endTime"                           TIMESTAMP,
+"start_time_millis"                 BIGINT NOT NULL,
+"end_time_millis"                   BIGINT NOT NULL,
+"start_time"                        TIMESTAMP,
+"end_time"                          TIMESTAMP,
 "date_created"                      TIMESTAMP,
 "date_updated"                      TIMESTAMP,
 "file_name"                         TEXT NOT NULL,
 "json_hash"                         uuid NOT NULL,
-UNIQUE ("startTimeMillis", "json_hash")
+UNIQUE ("start_time_millis", "json_hash")
 );
 
 CREATE TABLE waze.jams 
@@ -28,11 +28,12 @@ CREATE TABLE waze.jams
   "country"                         TEXT,
   "delay"                           INTEGER,
   "speed"                           float4,
+  "speed_kmh"                       float4,
   "length"                          INTEGER,
   "turn_type"                       TEXT,
   "level"                           INTEGER,
   "blocking_alert_id"               TEXT,
-  "coordinates"                     JSON,
+  "line"                            JSON,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
