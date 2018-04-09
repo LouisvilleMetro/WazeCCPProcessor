@@ -37,13 +37,14 @@ CREATE TABLE waze.jams
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
-CREATE TABLE waze.alerts 
+CREATE TABLE waze.alerts
 (
   "id"                              SERIAL PRIMARY KEY NOT NULL,
   "uuid"                            TEXT NOT NULL, 
   "pub_millis"                      BIGINT NOT NULL,
   "pub_utc_date"                    TIMESTAMP,
   "road_type"                       INTEGER,
+  "location"                        JSON,
   "street"                          TEXT,
   "city"                            TEXT,
   "country"                         TEXT,
@@ -55,19 +56,21 @@ CREATE TABLE waze.alerts
   "subtype"                         TEXT,
   "report_by_municipality_user"     BOOLEAN,
   "thumbs_up"                       INTEGER,
-  "jam_id"                          TEXT,
-  "irregularity_id"                 TEXT,
+  "jam_uuid"                        TEXT,
+  "irregularity_uuid"               TEXT,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
-CREATE TABLE waze.irregularities 
+CREATE TABLE waze.irregularities
 (
   "id"                              SERIAL PRIMARY KEY NOT NULL,
   "uuid"                            TEXT NOT NULL,
   "detection_date_millis"           BIGINT NOT NULL,
-  "detection_date"                  TIMESTAMP,
+  "detection_date"                  TEXT,
+  "detection_utc_date"              TIMESTAMP,
   "update_date_millis"              BIGINT NOT NULL,
-  "update_date"                     TIMESTAMP,
+  "update_date"                     TEXT,
+  "update_utc_date"                 TIMESTAMP,
   "street"                          TEXT,
   "city"                            TEXT,
   "country"                         TEXT,
@@ -86,6 +89,7 @@ CREATE TABLE waze.irregularities
   "n_thumbs_up"                     INTEGER,
   "n_comments"                      INTEGER,
   "n_images"                        INTEGER,
+  "line"                            JSON,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
