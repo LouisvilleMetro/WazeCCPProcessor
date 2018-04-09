@@ -33,7 +33,7 @@ CREATE TABLE waze.jams
   "turn_type"                       TEXT,
   "level"                           INTEGER,
   "blocking_alert_id"               TEXT,
-  "line"                            JSON,
+  "line"                            JSONB,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
@@ -44,7 +44,7 @@ CREATE TABLE waze.alerts
   "pub_millis"                      BIGINT NOT NULL,
   "pub_utc_date"                    TIMESTAMP,
   "road_type"                       INTEGER,
-  "location"                        JSON,
+  "location"                        JSONB,
   "street"                          TEXT,
   "city"                            TEXT,
   "country"                         TEXT,
@@ -89,7 +89,7 @@ CREATE TABLE waze.irregularities
   "n_thumbs_up"                     INTEGER,
   "n_comments"                      INTEGER,
   "n_images"                        INTEGER,
-  "line"                            JSON,
+  "line"                            JSONB,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
