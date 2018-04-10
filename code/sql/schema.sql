@@ -52,6 +52,7 @@ CREATE TABLE waze.alerts
   "reliability"                     INTEGER,
   "report_description"              TEXT,
   "report_rating"                   INTEGER,
+  "confidence"                      INTEGER,
   "type"                            TEXT,
   "subtype"                         TEXT,
   "report_by_municipality_user"     BOOLEAN,
