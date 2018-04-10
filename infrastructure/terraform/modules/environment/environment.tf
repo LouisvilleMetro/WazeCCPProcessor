@@ -397,7 +397,11 @@ resource "aws_lambda_function" "waze_data_processing_function"{
             ALERTPROCESSORARN = "${aws_lambda_function.waze_data_alerts_processing_function.arn}"
             JAMPROCESSORARN = "${aws_lambda_function.waze_data_jams_processing_function.arn}"
             IRREGULARITYPROCESSORARN = "${aws_lambda_function.waze_data_irregularities_processing_function.arn}"
-            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+            PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+            PGUSER = "${postgresql_role.lambda_role.name}"
+            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
+            PGPORT = "${var.rds_port}"
         }
     }
     tags {
@@ -419,7 +423,10 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
         variables = {
-            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+            PGUSER = "${postgresql_role.lambda_role.name}"
+            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
+            PGPORT = "${var.rds_port}"
         }
     }
     tags {
@@ -441,7 +448,10 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
         variables = {
-            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+            PGUSER = "${postgresql_role.lambda_role.name}"
+            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
+            PGPORT = "${var.rds_port}"
         }
     }
     tags {
@@ -463,7 +473,10 @@ resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
         variables = {
-            DBENDPOINT = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+            PGUSER = "${postgresql_role.lambda_role.name}"
+            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
+            PGPORT = "${var.rds_port}"
         }
     }
     tags {
@@ -608,4 +621,44 @@ resource "aws_rds_cluster_instance" "waze_database_instances" {
     Name = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
     Environment = "${var.environment}"
   }
+}
+
+################################################
+# POSTGRESQL
+################################################
+
+# setup the pg provider
+provider "postgresql" {
+    host            = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+    port            = "${var.rds_port}"
+    database        = "${aws_rds_cluster.waze_database_cluster.database_name}"
+    username        = "${var.rds_master_username}"
+    password        = "${var.rds_master_password}"
+}
+
+# generate a random string for the password
+resource "random_string" "password" {
+    length = 24
+    special = true
+}
+
+# setup the new role
+resource "postgresql_role" "lambda_role" {
+    name     = "lambda_role"
+    login    = true
+    password = "${random_string.password.result}"
+
+}
+
+# setup the schema
+resource "postgresql_schema" "waze_schema" {
+    name  = "waze"
+    owner = "${var.rds_master_username}"
+    if_not_exists = true
+
+    policy {
+        create_with_grant = true
+        usage_with_grant  = true
+        role              = "${postgresql_role.lambda_role.name}"
+    }
 }
