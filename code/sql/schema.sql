@@ -58,7 +58,6 @@ CREATE TABLE waze.alerts
   "report_by_municipality_user"     BOOLEAN,
   "thumbs_up"                       INTEGER,
   "jam_uuid"                        TEXT,
-  "irregularity_uuid"               TEXT,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
