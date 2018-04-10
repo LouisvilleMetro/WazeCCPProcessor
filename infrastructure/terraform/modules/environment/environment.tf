@@ -383,7 +383,7 @@ resource "aws_lambda_function" "waze_data_processing_function"{
     s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
     s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
     function_name = "${var.object_name_prefix}-waze-data-processing"
-    runtime = "nodejs6.10"
+    runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-process.processDataFile"
     timeout = 300
@@ -412,7 +412,7 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
     s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
     s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
     function_name = "${var.object_name_prefix}-waze-data-alerts-processing"
-    runtime = "nodejs6.10"
+    runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-process.processDataAlerts"
     timeout = 300
