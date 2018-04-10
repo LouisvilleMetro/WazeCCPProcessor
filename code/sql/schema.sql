@@ -1,4 +1,4 @@
-CREATE SCHEMA waze;
+CREATE IF NOT EXISTS SCHEMA waze;
 
 CREATE TABLE waze.data_files
 (
