@@ -10,13 +10,12 @@ CREATE TABLE waze.data_files
 "date_created"                      TIMESTAMP,
 "date_updated"                      TIMESTAMP,
 "file_name"                         TEXT NOT NULL,
-"json_hash"                         uuid NOT NULL,
-UNIQUE ("start_time_millis", "json_hash")
+"json_hash"                         VARCHAR(40) NOT NULL
 );
 
 CREATE TABLE waze.jams 
 (
-  "id"                              SERIAL PRIMARY KEY NOT NULL,
+  "id"                              VARCHAR(40) PRIMARY KEY NOT NULL,
   "uuid"                            TEXT NOT NULL,
   "pub_millis"                      BIGINT NOT NULL,
   "pub_utc_date"                    TIMESTAMP,
@@ -39,7 +38,7 @@ CREATE TABLE waze.jams
 
 CREATE TABLE waze.alerts
 (
-  "id"                              SERIAL PRIMARY KEY NOT NULL,
+  "id"                              VARCHAR(40) PRIMARY KEY NOT NULL,
   "uuid"                            TEXT NOT NULL, 
   "pub_millis"                      BIGINT NOT NULL,
   "pub_utc_date"                    TIMESTAMP,
@@ -63,7 +62,7 @@ CREATE TABLE waze.alerts
 
 CREATE TABLE waze.irregularities
 (
-  "id"                              SERIAL PRIMARY KEY NOT NULL,
+  "id"                              VARCHAR(40) PRIMARY KEY NOT NULL,
   "uuid"                            TEXT NOT NULL,
   "detection_date_millis"           BIGINT NOT NULL,
   "detection_date"                  TEXT,
@@ -100,9 +99,9 @@ CREATE TABLE waze.coordinates
   "latitude"                        float8 NOT NULL,
   "longitude"                       float8 NOT NULL,
   "order"                           INTEGER NOT NULL,
-  "jam_id"                          BIGINT REFERENCES waze.jams (id),
-  "irregularity_id"                 BIGINT REFERENCES waze.irregularities (id),
-  "alert_id"                        BIGINT REFERENCES waze.alerts (id)
+  "jam_id"                          VARCHAR(40) REFERENCES waze.jams (id),
+  "irregularity_id"                 VARCHAR(40) REFERENCES waze.irregularities (id),
+  "alert_id"                        VARCHAR(40) REFERENCES waze.alerts (id)
 );
 
 CREATE TABLE waze.roads 
