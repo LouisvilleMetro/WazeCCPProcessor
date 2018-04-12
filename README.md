@@ -24,8 +24,17 @@ Here are the steps to make it work:
 
 1. Log into your own AWS console.
 2. Created a new [S3 bucket](https://s3.console.aws.amazon.com/s3/home), *eg 'waze-artifacts-your-city'*. It needs read/write permissions only for your AWS console account. You only have to do this step one time.
-3. Create your lambda functions. Run *'npm install'* on the *waze-data-download.js* code in **[code/lambda-functions/waze-data-download](code/lambda-functions/waze-data-download)**, then zip the results up. Make sure NVM, NPM, and Node are updated on your machine first.  Alternatively, you can use our zip file at **[code/lambda-functions/waze-data-download.zip](code/lambda-functions/waze-data-download.zip)**.
+3. Create your lambda functions. 
+    - Make sure NVM, NPM, and Node are updated on your machine first.
+    - Run *'npm install'* on the *waze-data-download.js* code in **[code/lambda-functions/waze-data-download](code/lambda-functions/waze-data-download)**, then zip the results up. 
+      - TODO: JRS 20180412 - Convert the downloader to typescript, setup webpack, etc. so it also is as simple as just `npm install`  
+    - Run *'npm install'* on the *waze-data-process* code in **[code/lambda-functions/waze-data-process](code/lambda-functions/waze-data-process)**.  This should install dependencies, build, and output a zip file at `code/lambda-functions/waze-data-process.zip` locally.
+    - Alternatively, you can use our zip files at **[code/lambda-functions/waze-data-download.zip](code/lambda-functions/waze-data-download.zip)** and **[code/lambda-functions/waze-data-process.zip](code/lambda-functions/waze-data-process.zip)**.
 4. Upload the zip file from step 3 to the S3 bucket you created in step 2.  
+
+---
+
+### Everything between the horizontal lines needs to be revisited for new setup - JRS
 5. Create a new [Cloud Formation](https://console.aws.amazon.com/cloudformation/home) stack and run the YAML at [infrastructure/cloudformation/WazeProcessorStack.yml](infrastructure/cloudformation/WazeProcessorStack.yml).
 6. You will be prompted for 3 variables:
   * **EnvironmentName**: Enter name of the environment (Dev, Test, Prod, etc). This allows you to deploy and test updates easily.
@@ -39,6 +48,8 @@ Here's what was created, as seen in the Cloud Formation Designer:
 ![Waze Current Architecture](docs/WazeCurrentArchitecture.png "Waze Current Architecture")
 
 You can update the CF stack with new YAML as the code here gets updated, and it only affects new and changed items. You can also remove all the AWS infrastructure automatically (minus the S3 bucket you created manually) by deleting the CF stack. 
+
+---
 
 ## Current Plans
 
