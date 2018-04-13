@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "outDir": "./built",
+        "allowJs": true,
+        "noImplicitAny": true,
+        "removeComments": true,
+        "target": "es6",
+        "alwaysStrict": true,
+        "checkJs": true,
+        "noEmitOnError": true,
+        "module": "commonjs"
+    },
+    "include": [
+        "./src/**/*"
+    ]
+}

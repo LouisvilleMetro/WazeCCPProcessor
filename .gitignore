@@ -4,3 +4,7 @@
 node_modules/
 
 **/\.terraform/
+
+code/lambda-functions/waze-data-process/built/
+
+code/lambda-functions/waze-data-process/dist/
