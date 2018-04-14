@@ -317,6 +317,17 @@ resource "aws_iam_policy" "data_retrieval_resource_access" {
       "Resource": [
           "${aws_sqs_queue.data_processing_queue.arn}"
       ]
+    },
+    {
+       "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+          "${aws_lambda_function.waze_data_alerts_processing_function.arn}",
+          "${aws_lambda_function.waze_data_jams_processing_function.arn}",
+          "${aws_lambda_function.waze_data_irregularities_processing_function.arn}"
+      ] 
     }
   ]
 }
