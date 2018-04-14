@@ -53,10 +53,10 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                         throw new Error(util.format("Found existing record for hash '%s' with file name '%s' (id: %d)", jsonHash, data_file.file_name, data_file.id));
                     }
 
+                    console.info(util.format('Updating data_file id: %d', data_file.id));
+
                     //no change to the name, so the only thing we need to do is update the date_updated field
                     await db.updateDataFileUpdateDateByIdCommand(data_file.id);
-                    
-
                 }
                 else{
                     //we didn't get a record, so we need to save one
@@ -69,12 +69,12 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                     data_file.file_name = s3Key;
                     data_file.json_hash = jsonHash;
 
+                    console.info(util.format('Creating data_file: %s', s3Key));
+
                     data_file = await db.insertDataFileCommand(data_file);
                     
                 }
 
-                
-                    
                 //split out each of the groups and send them off to their own parallel lambdas
                 //it would be nice to also keep the root-level data intact, so we'll perform some trickery...
                 
@@ -97,6 +97,8 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                     //add the alerts back to the object
                     fileData.alerts = alerts;
                     
+                    console.info(util.format('Invoking alert processor with %d alerts', alerts.length));
+
                     //send it off to be processed
                     promises.push(invokeListProcessor(fileData, process.env.ALERTPROCESSORARN));
                     
@@ -108,6 +110,8 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                     
                     //add the jams back to the object
                     fileData.jams = jams;
+
+                    console.info(util.format('Invoking jam processor with %d jams', jams.length));
                     
                     //send it off to be processed
                     promises.push(invokeListProcessor(fileData, process.env.JAMPROCESSORARN));
@@ -120,6 +124,8 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                     
                     //add the irregularities back to the object
                     fileData.irregularities = irregularities;
+
+                    console.info(util.format('Invoking irregularity processor with %d irregularities', irregularities.length));
                     
                     //send it off to be processed
                     promises.push(invokeListProcessor(fileData, process.env.IRREGULARITYPROCESSORARN));
@@ -143,24 +149,46 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
         return;
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
+        callback(err);
         return err;
     }
 };
 
 const processDataAlerts: Handler = async (event: any, context: Context, callback: Callback) => {
-	//TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
-	throw new Error('NOT IMPLEMENTED');
+    //TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
+    try{
+        throw new Error('NOT IMPLEMENTED');
+    }
+	catch (err) {
+        console.error(err);
+        callback(err);
+        return err;
+    }
 };
 
 const processDataJams: Handler = async (event: any, context: Context, callback: Callback) => {
 	//TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
-	throw new Error('NOT IMPLEMENTED');
+	try{
+        throw new Error('NOT IMPLEMENTED');
+    }
+	catch (err) {
+        console.error(err);
+        callback(err);
+        return err;
+    }
 };
 
 const processDataIrregularities: Handler = async (event: any, context: Context, callback: Callback) => {
 	//TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
-	throw new Error('NOT IMPLEMENTED');
+	try{
+        throw new Error('NOT IMPLEMENTED');
+    }
+	catch (err) {
+        console.error(err);
+        callback(err);
+        return err;
+    }
 };
 
 // Read the S3 key from the retrieved SQS message
