@@ -5,6 +5,7 @@ import { Handler, Context, Callback } from 'aws-lambda';
 import * as entities from './entities';
 import * as db from './db';
 import util = require('util');
+import { PromiseResult } from 'aws-sdk/lib/request';
 
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS();
@@ -18,7 +19,7 @@ const hashOpts = {
 const processDataFile: Handler = async (event: any, context: Context, callback: Callback) => {
     try{
         //attempt to grab a record from the queue
-        let sqsParams = {
+        let sqsParams: AWS.SQS.ReceiveMessageRequest = {
             QueueUrl: process.env.SQSURL, /* required */
 			MaxNumberOfMessages: 1, // we'll only do one at a time
 			VisibilityTimeout: 330 // wait just a little longer than our 5 minute lambda timeout
@@ -31,7 +32,7 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
             console.info("Retrieved S3 Key: %s", s3Key);
 
             // now need to read that file in
-            let s3Params = {
+            let s3Params: AWS.S3.GetObjectRequest = {
                 Bucket: process.env.WAZEDATAINCOMINGBUCKET,
                 Key: s3Key,
             };
@@ -89,7 +90,7 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                 delete fileData.irregularities;
                 
                 //we'll need to keep track of the promises to process
-                let promises = new Array();
+                let promises = new Array<Promise<PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>>>();
 
                 //now we can check if we have each one and send them off for processing
                 if(alerts && alerts.length > 0){
@@ -136,12 +137,52 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
 
 				//wait for all of the promises to finish
 				if(promises.length > 0){
-					let promResult = await Promise.all(promises);
+                    let promResult = await Promise.all(promises);
+                    let wereAllSuccessful = promResult.every(res => {
+                        //make sure we got a 200 and either have no FunctionError or an empty one
+                        return res.StatusCode == 200 && (!res.FunctionError || res.FunctionError.length == 0);
+                    })
+
+                    //if they were NOT all successful, log an error with the whole response
+                    //most likely the individual processor that failed will have more info logged, 
+                    //but this will at least get us *something* just in case
+                    if(!wereAllSuccessful) {
+                        console.error(promResult);
+                        callback(new Error('Error processing alerts/jams/irregularities, review logs for more info'));
+                        return;
+                    }
+
+                    //we got here, so everything appears to have processed successfully
+
+                    //if all processing completed, move file from inbound bucket to processed
+                    let copyObjParams: AWS.S3.CopyObjectRequest = {
+                        Bucket: process.env.WAZEDATAPROCESSEDBUCKET,
+                        Key: s3Key,
+                        CopySource: util.format('/%s/%s', process.env.WAZEDATAINCOMINGBUCKET, s3Key)
+                    }
+                    let s3CopyResponse = await s3.copyObject(copyObjParams).promise();
+                    
+                    //make sure the copy didn't fail without throwing an error
+                    if(!s3CopyResponse.CopyObjectResult){
+                        console.error(s3CopyResponse);
+                        callback(new Error('Error copying object to processed bucket: ' + s3Key));
+                        return;
+                    }
+
+                    //now we can delete the file from the incoming bucket
+                    let deleteObjParams: AWS.S3.DeleteObjectRequest = {
+                        Bucket: process.env.WAZEDATAINCOMINGBUCKET,
+                        Key: s3Key
+                    }
+                    await s3.deleteObject(deleteObjParams).promise();
+
+				    //if all processing completed, delete SQS message
+                    let deleteSqsParams: AWS.SQS.DeleteMessageRequest = {
+                        QueueUrl: process.env.SQSURL,
+                        ReceiptHandle: sqsResponse.Messages[0].ReceiptHandle
+                    }
+                    await sqs.deleteMessage(deleteSqsParams).promise();
 				}
-
-				//TODO: JRS 2018-04-05 - if all processing completed, move file from inbound bucket to processed
-
-				//TODO: JRS 2018-04-05 - if all processing completed, delete SQS message
             }
         }
 
