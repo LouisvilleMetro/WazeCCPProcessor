@@ -76,6 +76,9 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                     
                 }
 
+                //now that we for sure have a data_file record in the DB, we'll need to pass the id on to everything else
+                fileData.data_file_id = data_file.id;
+
                 //split out each of the groups and send them off to their own parallel lambdas
                 //it would be nice to also keep the root-level data intact, so we'll perform some trickery...
                 
@@ -182,6 +185,8 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                         ReceiptHandle: sqsResponse.Messages[0].ReceiptHandle
                     }
                     await sqs.deleteMessage(deleteSqsParams).promise();
+
+                    //TODO: JRS 2018-04-16 - send a message to the SNS topic if enabled
 				}
             }
         }
@@ -199,7 +204,51 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
 const processDataAlerts: Handler = async (event: any, context: Context, callback: Callback) => {
     //TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
     try{
-        throw new Error('NOT IMPLEMENTED');
+        //start by parsing the json data that got passed over
+        let jsonData = JSON.parse(event);
+
+        //get the startTimeMillis from the root of the file so we can use it later in our hashing 
+        let rootStart = jsonData.startTimeMillis;
+
+        //also grab the data_file_id
+        let data_file_id = jsonData.data_file_id;
+
+        //loop through the alerts and process them all _asynchronously_
+        await Promise.all(jsonData.alerts.map(async (alert:any) => {
+            //hash the whole alert along with the rootStart to get a unique id
+            let alertHash = generateUniqueIdentifierHash(alert, rootStart);
+
+            //build an alert object
+            let alertEntity: entities.Alert = {
+                id: alertHash,
+                uuid: alert.uuid,
+                pub_millis: alert.pubMillis,
+                pub_utc_date: moment.utc(alert.pubMillis).toDate(),
+                road_type: alert.roadType,
+                location: JSON.stringify(alert.location),
+                street: alert.street,
+                city: alert.city,
+                country: alert.country,
+                magvar: alert.magvar,
+                reliability: alert.reliability,
+                report_description: alert.reportDescription,
+                report_rating: alert.reportRating,
+                confidence: alert.confidence,
+                type: alert.type,
+                subtype: alert.subtype,
+                report_by_municipality_user: alert.reportByMunicipalityUser,
+                thumbs_up: alert.nThumbsUp,
+                jam_uuid: alert.jamUuid,
+                datafile_id: data_file_id
+            }
+
+            //upsert the alert
+            await db.upsertAlertCommand(alertEntity);
+
+            //add the individual coordinate records from the location field
+            
+
+        }));
     }
 	catch (err) {
         console.error(err);

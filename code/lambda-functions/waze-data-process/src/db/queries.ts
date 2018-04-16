@@ -6,7 +6,7 @@ import * as entities from '../entities'
 export async function getDataFilesByHashQuery(jsonHash: string): Promise<entities.DataFile> { 
     const sql = 'SELECT * FROM waze.data_files WHERE json_hash = $1'; 
 
-    var result = await connectionPool.getPool().query(sql, [jsonHash]);
+    let result = await connectionPool.getPool().query(sql, [jsonHash]);
 
     if(result.rowCount > 1){
         //this shouldn't happen!

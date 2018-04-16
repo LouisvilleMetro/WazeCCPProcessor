@@ -1,5 +1,6 @@
 export class DataFile {
-    id: number;
+    //id is optional because it will be set on creation
+    id?: number;
     start_time_millis: number;
     end_time_millis: number;
     start_time: Date;
@@ -11,7 +12,7 @@ export class DataFile {
 }
 
 export class Alert {
-    id: number;
+    id: string;
     uuid: string;
     pub_millis: number;
     pub_utc_date: Date;
@@ -30,6 +31,16 @@ export class Alert {
     report_by_municipality_user: boolean;
     thumbs_up: number;
     jam_uuid: string;
-    irregularity_uuid: string;
     datafile_id: number;
+}
+
+export class Coordinate {
+    //id is optional because it will be set on creation
+    id?: number;
+    latitude: number;
+    longitude: number;
+    order: number;
+    jam_id?: number;
+    irregularity_id?: number;
+    alert_id?: number;
 }
