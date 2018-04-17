@@ -34,6 +34,29 @@ export class Alert {
     datafile_id: number;
 }
 
+export class Jam {
+    id: string;
+    uuid: string;
+    pub_millis: number;
+    pub_utc_date: Date;
+    start_node: string;
+    end_node: string;
+    road_type: number;
+    street: string;
+    city: string;
+    country: string;
+    delay: string;
+    speed: string;
+    speed_kmh: string;
+    length: string;
+    turn_type: string;
+    level: number;
+    blocking_alert_id: string;
+    line: string;
+    type: string;
+    datafile_id: number;
+}
+
 export class Coordinate {
     //id is optional because it will be set on creation
     id?: number;

@@ -81,7 +81,7 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
 
                 //split out each of the groups and send them off to their own parallel lambdas
                 //it would be nice to also keep the root-level data intact, so we'll perform some trickery...
-                
+
                 //first get all 3 sets
                 let alerts = fileData.alerts;
                 let jams = fileData.jams;
@@ -202,19 +202,17 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
 };
 
 const processDataAlerts: Handler = async (event: any, context: Context, callback: Callback) => {
-    //TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
     try{
-        //start by parsing the json data that got passed over
-        let jsonData = JSON.parse(event);
+        //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
         //get the startTimeMillis from the root of the file so we can use it later in our hashing 
-        let rootStart = jsonData.startTimeMillis;
+        let rootStart = event.startTimeMillis;
 
         //also grab the data_file_id
-        let data_file_id = jsonData.data_file_id;
+        let data_file_id = event.data_file_id;
 
         //loop through the alerts and process them all _asynchronously_
-        await Promise.all(jsonData.alerts.map(async (alert:any) => {
+        await Promise.all(event.alerts.map(async (alert:any) => {
             //hash the whole alert along with the rootStart to get a unique id
             let alertHash = generateUniqueIdentifierHash(alert, rootStart);
 
@@ -245,7 +243,9 @@ const processDataAlerts: Handler = async (event: any, context: Context, callback
             //upsert the alert
             await db.upsertAlertCommand(alertEntity);
 
-            //add the individual coordinate records from the location field
+            //add the individual coordinate record from the location field
+            //alerts only have 1 of these
+            //TODO: JRS 20180417 - save to coordinates
             
 
         }));
@@ -258,9 +258,52 @@ const processDataAlerts: Handler = async (event: any, context: Context, callback
 };
 
 const processDataJams: Handler = async (event: any, context: Context, callback: Callback) => {
-	//TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
 	try{
-        throw new Error('NOT IMPLEMENTED');
+        //the event we get will actually already be JSON parsed into an object, no need to parse manually
+
+        //get the startTimeMillis from the root of the file so we can use it later in our hashing 
+        let rootStart = event.startTimeMillis;
+
+        //also grab the data_file_id
+        let data_file_id = event.data_file_id;
+
+        //loop through the jams and process them all _asynchronously_
+        await Promise.all(event.jams.map(async (jam:any) => {
+            //hash the whole jam along with the rootStart to get a unique id
+            let jamHash = generateUniqueIdentifierHash(jam, rootStart);
+
+            //build a jam object
+            let jamEntity: entities.Jam = {
+                id: jamHash,
+                uuid: jam.uuid,
+                pub_millis: jam.pubMillis,
+                pub_utc_date: moment.utc(jam.pubMillis).toDate(),
+                start_node: jam.startNode,
+                end_node: jam.endNode,
+                road_type: jam.roadType,
+                street: jam.street,
+                city: jam.city,
+                country: jam.country,
+                delay: jam.delay,
+                speed: jam.speed,
+                speed_kmh: jam.speedKMH,
+                length: jam.length,
+                turn_type: jam.turnType,
+                level: jam.level,
+                blocking_alert_id: jam.blockingAlertUuid,
+                line: JSON.stringify(jam.line),
+                type: jam.type,
+                datafile_id: data_file_id
+            }
+
+            //upsert the jam
+            await db.upsertJamCommand(jamEntity);
+
+            //add the individual coordinate record from the line field
+            //TODO: JRS 20180417 - save to coordinates
+            
+
+        }));
     }
 	catch (err) {
         console.error(err);
@@ -270,7 +313,7 @@ const processDataJams: Handler = async (event: any, context: Context, callback: 
 };
 
 const processDataIrregularities: Handler = async (event: any, context: Context, callback: Callback) => {
-	//TODO: JRS 2018-04-05 - IMPLEMENT THIS - NEEDS DB SCHEMA (PR #25)
+	//TODO: JRS 2018-04-05 - IMPLEMENT THIS 
 	try{
         throw new Error('NOT IMPLEMENTED');
     }

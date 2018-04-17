@@ -131,3 +131,99 @@ export async function upsertAlertCommand(alert: entities.Alert): Promise<void> {
     //nothing currently to alter on the alert object based on SQL return
     return;
 }
+
+// upsert a jam record
+export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
+    //for simplicity, we'll always insert and update all fields, since our hash should ensure there aren't unexpected changes
+    //this is really more for when we discover later that waze added a new field, we add it in all the code, then reprocess those files
+
+    //#region UPSERT SQL
+    const sql = `INSERT INTO waze.jams (
+        id, 
+        uuid, 
+        pub_millis, 
+        pub_utc_date, 
+        start_node, 
+        end_node, 
+        road_type, 
+        street, 
+        city, 
+        country, 
+        delay, 
+        speed, 
+        speed_kmh, 
+        length, 
+        turn_type, 
+        level, 
+        blocking_alert_id, 
+        line, 
+        datafile_id
+    )
+    VALUES (
+        $1,     -- id
+        $2,     -- uuid
+        $3,     -- pub_millis
+        $4,     -- pub_utc_date
+        $5,     -- start_node
+        $6,     -- end_node
+        $7,     -- road_type
+        $8,     -- street
+        $9,     -- city
+        $10,    -- country
+        $11,    -- delay
+        $12,    -- speed
+        $13,    -- speed_kmh
+        $14,    -- length
+        $15,    -- turn_type
+        $16,    -- level
+        $17,    -- blocking_alert_id
+        $18,    -- line
+        $19     -- datafile_id
+    ) 
+    ON CONFLICT (id) DO UPDATE SET 
+        uuid=$2, 
+        pub_millis=$3, 
+        pub_utc_date=$4, 
+        start_node=$5, 
+        end_node=$6, 
+        road_type=$7, 
+        street=$8, 
+        city=$9, 
+        country=$10, 
+        delay=$11, 
+        speed=$12, 
+        speed_kmh=$13, 
+        length=$14, 
+        turn_type=$15, 
+        level=$16, 
+        blocking_alert_id=$17, 
+        line=$18, 
+        datafile_id=$19`;
+//#endregion
+
+    let result = await connectionPool.getPool().query(sql, [
+        jam.id,                 //id
+        jam.uuid,               //uuid
+        jam.pub_millis,         //pub_millis
+        jam.pub_utc_date,       //pub_utc_date
+        jam.start_node,         //start_node
+        jam.end_node,           //end_node
+        jam.road_type,          //road_type
+        jam.street,             //street
+        jam.city,               //city
+        jam.country,            //country
+        jam.delay,              //delay
+        jam.speed,              //speed
+        jam.speed_kmh,          //speed_kmh
+        jam.length,             //length
+        jam.turn_type,          //turn_type
+        jam.level,              //level
+        jam.blocking_alert_id,  //blocking_alert_id
+        jam.line,               //line
+        jam.datafile_id,        //datafile_id
+    ]);
+
+    //nothing currently to alter on the alert object based on SQL return
+    return;
+
+}
