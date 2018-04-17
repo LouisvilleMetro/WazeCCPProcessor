@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS  waze;
+CREATE SCHEMA IF NOT EXISTS waze;
 
 CREATE TABLE waze.data_files
 (
@@ -12,6 +12,11 @@ CREATE TABLE waze.data_files
 "file_name"                         TEXT NOT NULL,
 "json_hash"                         VARCHAR(40) NOT NULL
 );
+
+CREATE UNIQUE INDEX "IDX_UNIQUE_json_hash"
+ON waze.data_files USING btree
+(json_hash COLLATE pg_catalog."default")
+TABLESPACE pg_default;
 
 CREATE TABLE waze.jams 
 (
