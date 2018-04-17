@@ -434,6 +434,7 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
         variables = {
+            PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
             PGUSER = "${postgresql_role.lambda_role.name}"
             PGPASSWORD = "${postgresql_role.lambda_role.password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
@@ -459,6 +460,7 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
         variables = {
+            PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
             PGUSER = "${postgresql_role.lambda_role.name}"
             PGPASSWORD = "${postgresql_role.lambda_role.password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
@@ -484,6 +486,7 @@ resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
         variables = {
+            PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
             PGUSER = "${postgresql_role.lambda_role.name}"
             PGPASSWORD = "${postgresql_role.lambda_role.password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
