@@ -5,6 +5,7 @@ DO
 $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'lambda_role') THEN
+    GRANT ALL ON SCHEMA waze TO lambda_role;
     ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT ALL ON TABLES TO lambda_role;
     ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT SELECT, USAGE ON SEQUENCES TO lambda_role;
     ALTER DEFAULT PRIVILEGES IN SCHEMA waze	GRANT EXECUTE ON FUNCTIONS TO lambda_role;
@@ -127,7 +128,7 @@ CREATE TABLE waze.coordinates
   "jam_id"                          VARCHAR(40) REFERENCES waze.jams (id),
   "irregularity_id"                 VARCHAR(40) REFERENCES waze.irregularities (id),
   "alert_id"                        VARCHAR(40) REFERENCES waze.alerts (id),
-  "coordinate_type_id"              INTEGER REFERENCES waze.coordinate_type (id),
+  "coordinate_type_id"              INTEGER REFERENCES waze.coordinate_type (id)
 );
 
 CREATE TABLE waze.roads 
