@@ -1,5 +1,18 @@
 CREATE SCHEMA IF NOT EXISTS waze;
 
+-- setup permissions for the lambda role, if it has been created
+DO
+$$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'lambda_role') THEN
+    ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT ALL ON TABLES TO lambda_role;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT SELECT, USAGE ON SEQUENCES TO lambda_role;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA waze	GRANT EXECUTE ON FUNCTIONS TO lambda_role;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA waze	GRANT USAGE ON TYPES TO lambda_role;
+  END IF;
+END;
+$$;
+
 CREATE TABLE waze.data_files
 (
 "id"                                SERIAL PRIMARY KEY NOT NULL,
@@ -38,6 +51,8 @@ CREATE TABLE waze.jams
   "level"                           INTEGER,
   "blocking_alert_id"               TEXT,
   "line"                            JSONB,
+  "type"                            TEXT,
+  "turn_line"                       JSONB,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
@@ -97,16 +112,22 @@ CREATE TABLE waze.irregularities
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
+CREATE TABLE waze.coordinate_type
+(
+  "id"                              INTEGER PRIMARY KEY NOT NULL,
+  "type_name"                       TEXT NOT NULL
+);
 
 CREATE TABLE waze.coordinates 
 (
-  "id"                              SERIAL PRIMARY KEY NOT NULL,
+  "id"                              VARCHAR(40) PRIMARY KEY NOT NULL,
   "latitude"                        float8 NOT NULL,
   "longitude"                       float8 NOT NULL,
   "order"                           INTEGER NOT NULL,
   "jam_id"                          VARCHAR(40) REFERENCES waze.jams (id),
   "irregularity_id"                 VARCHAR(40) REFERENCES waze.irregularities (id),
-  "alert_id"                        VARCHAR(40) REFERENCES waze.alerts (id)
+  "alert_id"                        VARCHAR(40) REFERENCES waze.alerts (id),
+  "coordinate_type_id"              INTEGER REFERENCES waze.coordinate_type (id),
 );
 
 CREATE TABLE waze.roads 
@@ -122,3 +143,7 @@ CREATE TABLE waze.alert_types
   "type"                            TEXT NOT NULL,
   "subtype"                         TEXT
 );
+
+-- load coordinate type lookup table
+INSERT INTO waze.coordinate_type (id, type_name) VALUES (1, 'Line');
+INSERT INTO waze.coordinate_type (id, type_name) VALUES (2, 'Turn Line');
