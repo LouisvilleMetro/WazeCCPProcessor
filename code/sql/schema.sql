@@ -147,3 +147,4 @@ CREATE TABLE waze.alert_types
 -- load coordinate type lookup table
 INSERT INTO waze.coordinate_type (id, type_name) VALUES (1, 'Line');
 INSERT INTO waze.coordinate_type (id, type_name) VALUES (2, 'Turn Line');
+INSERT INTO waze.coordinate_type (id, type_name) VALUES (3, 'Location');
