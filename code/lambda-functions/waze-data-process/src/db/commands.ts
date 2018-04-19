@@ -157,7 +157,9 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         level, 
         blocking_alert_id, 
         line, 
-        datafile_id
+        datafile_id,
+        type,
+        turn_line
     )
     VALUES (
         $1,     -- id
@@ -178,7 +180,9 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         $16,    -- level
         $17,    -- blocking_alert_id
         $18,    -- line
-        $19     -- datafile_id
+        $19,    -- datafile_id
+        $20,    -- type
+        $21     -- turn_line
     ) 
     ON CONFLICT (id) DO UPDATE SET 
         uuid=$2, 
@@ -198,7 +202,9 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         level=$16, 
         blocking_alert_id=$17, 
         line=$18, 
-        datafile_id=$19`;
+        datafile_id=$19,
+        type=$20,
+        turn_line=$21`;
 //#endregion
 
     let result = await connectionPool.getPool().query(sql, [
@@ -221,9 +227,63 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         jam.blocking_alert_id,  //blocking_alert_id
         jam.line,               //line
         jam.datafile_id,        //datafile_id
+        jam.type,               //type
+        jam.turn_line,          //turn_line
     ]);
 
-    //nothing currently to alter on the alert object based on SQL return
+    //nothing currently to jam on the alert object based on SQL return
     return;
 
+}
+
+// upsert a coordinate record
+export async function upsertCoordinateCommand(coordinate: entities.Coordinate): Promise<void> {
+    //for simplicity, we'll always insert and update all fields, since our hash should ensure there aren't unexpected changes
+    //this is really more for when we discover later that waze added a new field, we add it in all the code, then reprocess those files
+
+    //#region UPSERT SQL
+    const sql = `INSERT INTO waze.coordinates (
+        id, 
+        latitude, 
+        longitude, 
+        "order", 
+        jam_id, 
+        irregularity_id, 
+        alert_id, 
+        coordinate_type_id
+    )
+    VALUES (
+        $1,     -- id
+        $2,     -- latitude
+        $3,     -- longitude
+        $4,     -- order
+        $5,     -- jam_id
+        $6,     -- irregularity_id
+        $7,     -- alert_id
+        $8      -- coordinate_type_id
+    ) 
+    ON CONFLICT (id) DO UPDATE SET 
+        id=$1, 
+        latitude=$2,
+        longitude=$3, 
+        "order"=$4, 
+        jam_id=$5, 
+        irregularity_id=$6, 
+        alert_id=$7, 
+        coordinate_type_id=$8`;
+    //#endregion
+
+    let result = await connectionPool.getPool().query(sql, [
+        coordinate.id,                  //id
+        coordinate.latitude,            //latitude
+        coordinate.longitude,           //longitude
+        coordinate.order,               //order
+        coordinate.jam_id,              //jam_id
+        coordinate.irregularity_id,     //irregularity_id
+        coordinate.alert_id,            //alert_id
+        coordinate.coordinate_type_id   //coordinate_type_id
+    ]);
+
+    //nothing currently to alter on the coordinate object based on SQL return
+    return;
 }

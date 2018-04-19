@@ -3,6 +3,7 @@ import AWS = require('aws-sdk');
 import moment = require('moment');
 import { Handler, Context, Callback } from 'aws-lambda';
 import * as entities from './entities';
+import * as wazeTypes from './waze-types';
 import * as db from './db';
 import util = require('util');
 import { PromiseResult } from 'aws-sdk/lib/request';
@@ -40,7 +41,7 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
             
             //make sure we got something
             if(s3Response.Body){
-                let fileData = JSON.parse(s3Response.Body.toString());
+                let fileData: wazeTypes.dataFileWithInternalId = JSON.parse(s3Response.Body.toString());
 
                 //first need to see if we've seen this file before or not, based on hash
                 //be sure to only compute the hash once, to save on processing
@@ -201,7 +202,7 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
     }
 };
 
-const processDataAlerts: Handler = async (event: any, context: Context, callback: Callback) => {
+const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
     try{
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
@@ -212,9 +213,9 @@ const processDataAlerts: Handler = async (event: any, context: Context, callback
         let data_file_id = event.data_file_id;
 
         //loop through the alerts and process them all _asynchronously_
-        await Promise.all(event.alerts.map(async (alert:any) => {
+        await Promise.all(event.alerts.map(async (alert:wazeTypes.alert) => {
             //hash the whole alert along with the rootStart to get a unique id
-            let alertHash = generateUniqueIdentifierHash(alert, rootStart);
+            let alertHash = generateAJIUniqueIdentifierHash(alert, rootStart);
 
             //build an alert object
             let alertEntity: entities.Alert = {
@@ -244,10 +245,19 @@ const processDataAlerts: Handler = async (event: any, context: Context, callback
             await db.upsertAlertCommand(alertEntity);
 
             //add the individual coordinate record from the location field
-            //alerts only have 1 of these
-            //TODO: JRS 20180417 - save to coordinates
-            
+            //alerts only have 1 of these, in the location object
+            if(alert.location){
+                let coord: entities.Coordinate = {
+                    id: generateCoordinateUniqueIdentifierHash(alert.location, entities.CoordinateType.Location, alertHash, null, null),
+                    alert_id: alertHash,
+                    coordinate_type_id: entities.CoordinateType.Location,
+                    latitude: alert.location.y,
+                    longitude: alert.location.x,
+                    order: 1
+                }
 
+                await db.upsertCoordinateCommand(coord);
+            }
         }));
     }
 	catch (err) {
@@ -257,7 +267,7 @@ const processDataAlerts: Handler = async (event: any, context: Context, callback
     }
 };
 
-const processDataJams: Handler = async (event: any, context: Context, callback: Callback) => {
+const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
 	try{
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
@@ -268,9 +278,9 @@ const processDataJams: Handler = async (event: any, context: Context, callback: 
         let data_file_id = event.data_file_id;
 
         //loop through the jams and process them all _asynchronously_
-        await Promise.all(event.jams.map(async (jam:any) => {
+        await Promise.all(event.jams.map(async (jam:wazeTypes.jam) => {
             //hash the whole jam along with the rootStart to get a unique id
-            let jamHash = generateUniqueIdentifierHash(jam, rootStart);
+            let jamHash = generateAJIUniqueIdentifierHash(jam, rootStart);
 
             //build a jam object
             let jamEntity: entities.Jam = {
@@ -293,16 +303,49 @@ const processDataJams: Handler = async (event: any, context: Context, callback: 
                 blocking_alert_id: jam.blockingAlertUuid,
                 line: JSON.stringify(jam.line),
                 type: jam.type,
-                datafile_id: data_file_id
+                datafile_id: data_file_id,
+                turn_line: JSON.stringify(jam.turnLine)
             }
 
             //upsert the jam
             await db.upsertJamCommand(jamEntity);
 
-            //add the individual coordinate record from the line field
-            //TODO: JRS 20180417 - save to coordinates
-            
+            //add the individual coordinate records from the line and turnLine fields
+            //we won't do these in parallel because we're already running jams async
+            //and don't want to just blast the database
+            if (jam.line) {
+                for (let index = 0; index < jam.line.length; index++) {
+                    const lineCoord = jam.line[index];
+                    
+                    let coord: entities.Coordinate = {
+                        id: generateCoordinateUniqueIdentifierHash(lineCoord, entities.CoordinateType.Line, null, jamHash, null),
+                        jam_id: jamHash,
+                        coordinate_type_id: entities.CoordinateType.Line,
+                        latitude: lineCoord.y,
+                        longitude: lineCoord.x,
+                        order: index + 1 //index is zero-based, but our order is 1-based, so add 1
+                    }
 
+                    await db.upsertCoordinateCommand(coord);
+                }
+            }
+            
+            if(jam.turnLine){
+                for (let index = 0; index < jam.turnLine.length; index++) {
+                    const turnLineCoord = jam.turnLine[index];
+                    
+                    let coord: entities.Coordinate = {
+                        id: generateCoordinateUniqueIdentifierHash(turnLineCoord, entities.CoordinateType.TurnLine, null, jamHash, null),
+                        jam_id: jamHash,
+                        coordinate_type_id: entities.CoordinateType.TurnLine,
+                        latitude: turnLineCoord.y,
+                        longitude: turnLineCoord.x,
+                        order: index + 1 //index is zero-based, but our order is 1-based, so add 1
+                    }
+
+                    await db.upsertCoordinateCommand(coord);
+                }
+            }
         }));
     }
 	catch (err) {
@@ -312,7 +355,7 @@ const processDataJams: Handler = async (event: any, context: Context, callback: 
     }
 };
 
-const processDataIrregularities: Handler = async (event: any, context: Context, callback: Callback) => {
+const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
 	//TODO: JRS 2018-04-05 - IMPLEMENT THIS 
 	try{
         throw new Error('NOT IMPLEMENTED');
@@ -341,7 +384,7 @@ function computeHash(object:Object): string {
 }
 
 // Generate a unique id based on the timestamp from the data root and the specific object (the whole alert, jam, irregularity, etc)
-function generateUniqueIdentifierHash(object:Object, rootStartTime:number): string {
+function generateAJIUniqueIdentifierHash(object:Object, rootStartTime:number): string {
     //hash the object first
     let objHash = computeHash(object);
     //combine that hash with the timestamp
@@ -353,8 +396,24 @@ function generateUniqueIdentifierHash(object:Object, rootStartTime:number): stri
     return computeHash(combinedObject);
 }
 
+// Generate a unique id based on the coordinate, type, and parent id
+function generateCoordinateUniqueIdentifierHash(coordinate: wazeTypes.coordinate, type: entities.CoordinateType, alertId: string, jamId: string, irregularityId: string){
+    //hash the coordinate first
+    let coordHash = computeHash(coordinate);
+    //combine the coord hash with the other data into a single object
+    let combinedObject = {
+        originalObjectHash: coordHash,
+        coordinateType: type,
+        alertId: alertId,
+        jamId: jamId,
+        irregularityId: irregularityId
+    }
+    //hash the combined data and return it
+    return computeHash(combinedObject);
+}
+
 // trigger an invocation of one of the list processor lambdas
-function invokeListProcessor(data:Object, lambdaARN:string){
+function invokeListProcessor(data:wazeTypes.dataFileWithInternalId, lambdaARN:string){
     return lambda.invoke({
         FunctionName: lambdaARN,
         InvocationType: 'RequestResponse',

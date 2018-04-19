@@ -54,16 +54,23 @@ export class Jam {
     blocking_alert_id: string;
     line: string;
     type: string;
+    turn_line: string;
     datafile_id: number;
 }
 
 export class Coordinate {
-    //id is optional because it will be set on creation
-    id?: number;
+    id: string;
     latitude: number;
     longitude: number;
     order: number;
-    jam_id?: number;
-    irregularity_id?: number;
-    alert_id?: number;
+    jam_id?: string;
+    irregularity_id?: string;
+    alert_id?: string;
+    coordinate_type_id: number;
+}
+
+export const enum CoordinateType {
+    Line = 1,
+    TurnLine = 2,
+    Location = 3,
 }
