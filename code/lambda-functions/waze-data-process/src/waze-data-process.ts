@@ -1,7 +1,7 @@
 import hash = require('object-hash');
 import AWS = require('aws-sdk');
 import moment = require('moment');
-import { Handler, Context, Callback } from 'aws-lambda';
+import { Handler, Context, Callback, ScheduledEvent } from 'aws-lambda';
 import * as entities from './entities';
 import * as wazeTypes from './waze-types';
 import * as db from './db';
@@ -19,6 +19,13 @@ const hashOpts = {
 
 const processDataFile: Handler = async (event: any, context: Context, callback: Callback) => {
     try{
+
+        //first figure out if cloudwatch events triggered this lambda, which we'll use later for some decisions
+        let wasTriggeredByCloudwatch = false;
+        if(event && event.source && (event.source == 'aws.events' || event.source == 'selfInvoke')){
+                wasTriggeredByCloudwatch = true;
+        }
+
         //attempt to grab a record from the queue
         let sqsParams: AWS.SQS.ReceiveMessageRequest = {
             QueueUrl: process.env.SQSURL, /* required */
@@ -188,7 +195,21 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
                     await sqs.deleteMessage(deleteSqsParams).promise();
 
                     //TODO: JRS 2018-04-16 - send a message to the SNS topic if enabled
+
+
 				}
+            }
+
+            //if we got here, we had something in SQS and did some work on it
+            //if this run was triggered by cloudwatch, that means we're in the "failsafe"
+            //path and need to go ahead and retrigger until there's nothing left in the queue
+            if(wasTriggeredByCloudwatch){
+                console.info('Invoking self');
+                lambda.invoke({
+                    FunctionName: process.env.AWS_LAMBDA_FUNCTION_NAME, //name of THIS function
+                    InvocationType: 'Event',
+                    Payload: JSON.stringify({source: 'selfInvoke'})
+                }).send();
             }
         }
 
@@ -264,6 +285,11 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
         console.error(err);
         callback(err);
         return err;
+    }
+    finally{
+        //be sure the DB connection pool is closed
+        //if not, lambda will hang out to connections for long periods
+        await db.closePool();
     }
 };
 
@@ -353,6 +379,11 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
         callback(err);
         return err;
     }
+    finally{
+        //be sure the DB connection pool is closed
+        //if not, lambda will hang out to connections for long periods
+        await db.closePool();
+    }
 };
 
 const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
@@ -364,6 +395,11 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
         console.error(err);
         callback(err);
         return err;
+    }
+    finally{
+        //be sure the DB connection pool is closed
+        //if not, lambda will hang out to connections for long periods
+        await db.closePool();
     }
 };
 
