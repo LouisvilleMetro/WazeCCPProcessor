@@ -47,11 +47,36 @@ export interface alert {
     jamUuid: string;
 }
 
+// type for irregularity objects from data file
+//TODO: JRS 20180419 - review this once we actually see a file with one in it, just in case docs weren't accurate
+export interface irregularity {
+    id: string;
+    detectionDate: string; //not sure about this one
+    detectionDateMillis: number;
+    updateDate: string; //not sure about this one
+    updateDateMillis: number;
+    line: Array<coordinate>;
+    type: string;
+    speed: number;
+    regularSpeed: number;
+    delaySeconds: number;
+    seconds: number;
+    length: number;
+    trend: number;
+    street: string;
+    city: string;
+    country: string;
+    severity: number;
+    jamLevel: number;
+    driversCount: number;
+    alertsCount: number;
+}
+
 // Type for the root data file
 export interface dataFile {
     alerts: Array<alert>;
     jams: Array<jam>;
-    irregularities: Array<any>;
+    irregularities: Array<irregularity>;
     startTimeMillis: number;
     endTimeMillis: number;
     startTime: string;

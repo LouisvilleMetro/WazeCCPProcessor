@@ -58,6 +58,37 @@ export class Jam {
     datafile_id: number;
 }
 
+export class Irregularity {
+    id: string;
+    uuid: string;
+    detection_date_millis: number;
+    detection_date: string;
+    detection_utc_date: Date;
+    update_date_millis: number;
+    update_date: string;
+    update_utc_date: Date;
+    street: string;
+    city: string;
+    country: string;
+    is_highway: boolean;
+    speed: number;
+    regular_speed: number;
+    delay_seconds: number;
+    seconds: number;
+    length: number;
+    trend: number;
+    type: string;
+    severity: number;
+    jam_level: number;
+    drivers_count: number;
+    alerts_count: number;
+    n_thumbs_up: number;
+    n_comments: number;
+    n_images: number;
+    line: string;
+    datafile_id: number;
+}
+
 export class Coordinate {
     id: string;
     latitude: number;

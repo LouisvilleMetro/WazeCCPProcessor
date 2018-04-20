@@ -408,7 +408,74 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
 const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
 	//TODO: JRS 2018-04-05 - IMPLEMENT THIS 
 	try{
-        throw new Error('NOT IMPLEMENTED');
+        //the event we get will actually already be JSON parsed into an object, no need to parse manually
+
+        //get the startTimeMillis from the root of the file so we can use it later in our hashing 
+        let rootStart = event.startTimeMillis;
+
+        //also grab the data_file_id
+        let data_file_id = event.data_file_id;
+
+        //loop through the irregs and process them all _asynchronously_
+        await Promise.all(event.irregularities.map(async (irregularity:wazeTypes.irregularity) => {
+            //hash the whole irreg along with the rootStart to get a unique id
+            let irregularityHash = generateAJIUniqueIdentifierHash(irregularity, rootStart);
+
+            //build an irreg object
+            let irregularityEntity: entities.Irregularity = {
+                id: irregularityHash,
+                uuid: irregularity.id,
+                detection_date: irregularity.detectionDate,
+                detection_date_millis: irregularity.detectionDateMillis,
+                detection_utc_date: moment.utc(irregularity.detectionDateMillis).toDate(),
+                alerts_count: irregularity.alertsCount,
+                city: irregularity.city,
+                street: irregularity.street,
+                country: irregularity.country,
+                delay_seconds: irregularity.delaySeconds,
+                seconds: irregularity.seconds,
+                drivers_count: irregularity.driversCount,
+                jam_level: irregularity.jamLevel,
+                length: irregularity.length,
+                line: JSON.stringify(irregularity.line),
+                regular_speed: irregularity.regularSpeed,
+                severity: irregularity.severity,
+                speed: irregularity.speed,
+                trend: irregularity.trend,
+                type: irregularity.type,
+                update_date: irregularity.updateDate,
+                update_date_millis: irregularity.updateDateMillis,
+                update_utc_date: moment.utc(irregularity.updateDateMillis).toDate(),
+                is_highway: null,   //not in waze spec
+                n_comments: null,   //not in waze spec
+                n_images: null,     //not in waze spec
+                n_thumbs_up: null,  //not in waze spec
+                datafile_id: data_file_id
+            }
+
+            //upsert the irreg
+            await db.upsertIrregularityCommand(irregularityEntity);
+
+            //add the individual coordinate records from the line field
+            //we won't do these in parallel because we're already running irregs async
+            //and don't want to just blast the database
+            if (irregularity.line) {
+                for (let index = 0; index < irregularity.line.length; index++) {
+                    const lineCoord = irregularity.line[index];
+                    
+                    let coord: entities.Coordinate = {
+                        id: generateCoordinateUniqueIdentifierHash(lineCoord, entities.CoordinateType.Line, null, null, irregularityHash),
+                        irregularity_id: irregularityHash,
+                        coordinate_type_id: entities.CoordinateType.Line,
+                        latitude: lineCoord.y,
+                        longitude: lineCoord.x,
+                        order: index + 1 //index is zero-based, but our order is 1-based, so add 1
+                    }
+
+                    await db.upsertCoordinateCommand(coord);
+                }
+            }
+        }));
     }
 	catch (err) {
         console.error(err);

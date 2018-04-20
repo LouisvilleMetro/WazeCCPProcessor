@@ -231,6 +231,138 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         jam.turn_line,          //turn_line
     ]);
 
+    //nothing currently to update on the jam object based on SQL return
+    return;
+
+}
+
+// upsert an irregularity record
+export async function upsertIrregularityCommand(irregularity: entities.Irregularity): Promise<void> {
+    //for simplicity, we'll always insert and update all fields, since our hash should ensure there aren't unexpected changes
+    //this is really more for when we discover later that waze added a new field, we add it in all the code, then reprocess those files
+
+    //#region UPSERT SQL
+    const sql = `INSERT INTO waze.irregularities (
+        id, 
+        uuid, 
+        detection_date_millis,
+        detection_date, 
+        detection_utc_date, 
+        update_date_millis, 
+        update_date, 
+        update_utc_date, 
+        street, 
+        city, 
+        country, 
+        is_highway, 
+        speed, 
+        regular_speed, 
+        delay_seconds, 
+        seconds, 
+        length, 
+        trend, 
+        type, 
+        severity, 
+        jam_level, 
+        drivers_count, 
+        alerts_count, 
+        n_thumbs_up, 
+        n_comments, 
+        n_images, 
+        line, 
+        datafile_id
+    )
+    VALUES (
+        $1,     -- id, 
+        $2,     -- uuid, 
+        $3,     -- detection_date_millis,
+        $4,     -- detection_date, 
+        $5,     -- detection_utc_date, 
+        $6,     -- update_date_millis, 
+        $7,     -- update_date, 
+        $8,     -- update_utc_date, 
+        $9,     -- street, 
+        $10,    -- city, 
+        $11,    -- country, 
+        $12,    -- is_highway, 
+        $13,    -- speed, 
+        $14,    -- regular_speed, 
+        $15,    -- delay_seconds, 
+        $16,    -- seconds, 
+        $17,    -- length, 
+        $18,    -- trend, 
+        $19,    -- type, 
+        $20,    -- severity, 
+        $21,    -- jam_level, 
+        $22,    -- drivers_count, 
+        $23,    -- alerts_count, 
+        $24,    -- n_thumbs_up, 
+        $25,    -- n_comments, 
+        $26,    -- n_images, 
+        $27,    -- line, 
+        $28     -- datafile_id
+    ) 
+    ON CONFLICT (id) DO UPDATE SET 
+        uuid  = $2,
+        detection_date_millis = $3,
+        detection_date  = $4,
+        detection_utc_date  = $5,
+        update_date_millis  = $6,
+        update_date  = $7,
+        update_utc_date  = $8,
+        street  = $9,
+        city  = $10,
+        country  = $11,
+        is_highway  = $12,
+        speed  = $13,
+        regular_speed  = $14,
+        delay_seconds  = $15,
+        seconds  = $16,
+        length  = $17,
+        trend  = $18,
+        type  = $19,
+        severity  = $20,
+        jam_level  = $21,
+        drivers_count  = $22,
+        alerts_count  = $23,
+        n_thumbs_up  = $24,
+        n_comments  = $25,
+        n_images = $26,
+        line = $27,
+        datafile_id = $28`;
+    //#endregion
+
+    let result = await connectionPool.getPool().query(sql, [
+        irregularity.id,                    //id     
+        irregularity.uuid,                  //uuid 
+        irregularity.detection_date_millis, //detection_date_millis
+        irregularity.detection_date,        //detection_date 
+        irregularity.detection_utc_date,    //detection_utc_date 
+        irregularity.update_date_millis,    //update_date_millis 
+        irregularity.update_date,           //update_date 
+        irregularity.update_utc_date,       //update_utc_date 
+        irregularity.street,                //street 
+        irregularity.city,                  //city 
+        irregularity.country,               //country 
+        irregularity.is_highway,            //is_highway 
+        irregularity.speed,                 //speed 
+        irregularity.regular_speed,         //regular_speed 
+        irregularity.delay_seconds,         //delay_seconds 
+        irregularity.seconds,               //seconds 
+        irregularity.length,                //length 
+        irregularity.trend,                 //trend 
+        irregularity.type,                  //type 
+        irregularity.severity,              //severity 
+        irregularity.jam_level,             //jam_level 
+        irregularity.drivers_count,         //drivers_count 
+        irregularity.alerts_count,          //alerts_count 
+        irregularity.n_thumbs_up,           //n_thumbs_up 
+        irregularity.n_comments,            //n_comments 
+        irregularity.n_images,              //n_images
+        irregularity.line,                  //line
+        irregularity.datafile_id            //datafile_id
+    ]);
+
     //nothing currently to jam on the alert object based on SQL return
     return;
 
