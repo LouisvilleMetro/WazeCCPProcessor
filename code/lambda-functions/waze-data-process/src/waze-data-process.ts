@@ -242,7 +242,7 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
     finally{
         //be sure the DB connection pool is closed
         //if not, lambda will hang on to connections for long periods
-        await db.closePool();
+        //await db.closePool();
     }
 };
 
@@ -312,7 +312,7 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
     finally{
         //be sure the DB connection pool is closed
         //if not, lambda will hang on to connections for long periods
-        await db.closePool();
+        //await db.closePool();
     }
 };
 
@@ -405,7 +405,7 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
     finally{
         //be sure the DB connection pool is closed
         //if not, lambda will hang on to connections for long periods
-        await db.closePool();
+        //await db.closePool();
     }
 };
 
@@ -489,7 +489,7 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
     finally{
         //be sure the DB connection pool is closed
         //if not, lambda will hang on to connections for long periods
-        await db.closePool();
+        //await db.closePool();
     }
 };
 
