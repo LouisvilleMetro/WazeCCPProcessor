@@ -22,13 +22,14 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
     try{
 
         //we'll loop and process as long as there are records and the queue 
-        //and there is twice as much time left as the average loop time
+        //and there is twice as much time left as the max loop time
         let isQueueDrained = false;
-        let averageLoopTimeInMillis = 0;
+        let maxLoopTimeInMillis = 0;
 
         //keep this lambda alive and processing items from the queue as long as the time remaining
-        //minus a 10 second buffer is greater than double the average iteration run time
-        while(context.getRemainingTimeInMillis() - 10000 > averageLoopTimeInMillis * 2){
+        //minus a 10 second buffer is greater than double the max iteration run time
+        while(context.getRemainingTimeInMillis() - 10000 > maxLoopTimeInMillis * 2){
+            console.info('Continuing - Function time remaining: %d, Max iteration time: %d', context.getRemainingTimeInMillis(), maxLoopTimeInMillis);
             //"start" a timer for this iteration
             let loopStart = process.hrtime();
 
@@ -218,7 +219,10 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
             let loopEnd = process.hrtime(loopStart);
             //convert loopend to milliseconds
             let loopTimeInMillis = (loopEnd["0"] * 1000) + (loopEnd["1"] / 1e6);
-            averageLoopTimeInMillis = Math.ceil((averageLoopTimeInMillis + loopTimeInMillis) / 2);
+            //if this run was longer than the max, set a new max
+            if(loopTimeInMillis > maxLoopTimeInMillis){
+                maxLoopTimeInMillis = loopTimeInMillis
+            }
         }
 
         //if the queue is not drained, send a message to the SNS topic that retriggers this lambda
