@@ -87,29 +87,6 @@ resource "aws_cloudwatch_metric_alarm" "data_processing_queue_alarm" {
   treat_missing_data        = "ignore"
 }
 
-# create a cloudwatch event that will run on a schedule to trigger our "failsafe" reprocessing
-resource "aws_cloudwatch_event_rule" "data_processor_retry_timer" { 
-    name = "${var.object_name_prefix}-data-processor-retry-timer"
-    description = "Cron job to run the processor periodically so we records don't get stuck in the queue "
-    schedule_expression = "rate(15 minutes)"
-}
-
-# setup a target for the event
-resource "aws_cloudwatch_event_target" "data_processor_retry_timer_target" { 
-    rule = "${aws_cloudwatch_event_rule.data_processor_retry_timer.name}"
-    arn  = "${aws_lambda_function.waze_data_processing_function.arn}"
-}
-
-# give permission for our lambda to be triggered by cloudwatch event
-resource "aws_lambda_permission" "allow_data_processor_retry_timer_target_lambda" {
-    statement_id  = "AllowExecutionFromCloudwatch"
-    action        = "lambda:InvokeFunction"
-    function_name = "${aws_lambda_function.waze_data_processing_function.function_name}"
-    principal     = "events.amazonaws.com"
-    source_arn    = "${aws_cloudwatch_event_rule.data_processor_retry_timer.arn}"
-}
-
-
 ###############################################
 # S3
 ###############################################
@@ -341,12 +318,21 @@ resource "aws_iam_policy" "data_retrieval_resource_access" {
       ]
     },
     {
+      "Action": [
+        "sns:Publish"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+          "${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}",
+          "${aws_sns_topic.data_processed_sns_topic.arn}"
+      ]
+    },
+    {
        "Action": [
         "lambda:InvokeFunction"
       ],
       "Effect": "Allow",
       "Resource": [
-          "${aws_lambda_function.waze_data_processing_function.arn}",
           "${aws_lambda_function.waze_data_alerts_processing_function.arn}",
           "${aws_lambda_function.waze_data_jams_processing_function.arn}",
           "${aws_lambda_function.waze_data_irregularities_processing_function.arn}"
@@ -427,6 +413,7 @@ resource "aws_lambda_function" "waze_data_processing_function"{
             WAZEDATAINCOMINGBUCKET = "${aws_s3_bucket.waze_data_incoming_bucket.id}"
             WAZEDATAPROCESSEDBUCKET = "${aws_s3_bucket.waze_data_processed_bucket.id}"
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
+            RETRIGGERSNSTOPIC = "${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"
             SNSTOPIC = "${var.enable_data_processed_sns_topic == "true" ? aws_sns_topic.data_processed_sns_topic.arn : "" }"
             ALERTPROCESSORARN = "${aws_lambda_function.waze_data_alerts_processing_function.arn}"
             JAMPROCESSORARN = "${aws_lambda_function.waze_data_jams_processing_function.arn}"
