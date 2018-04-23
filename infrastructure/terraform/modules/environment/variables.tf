@@ -40,4 +40,10 @@ variable "empty_s3_buckets_before_destroy" {
     description = "Whether or not to delete everything in the buckets on destruction, so they can be destroyed without error"
 }
 
+variable "max_concurrent_db_connections_per_lambda" {
+    type = "string"
+    description = "The maximum number of connections a single lambda will open, which will affect both connection pool and async throttling"
+    default = "20"
+}
+
 

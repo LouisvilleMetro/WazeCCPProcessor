@@ -314,7 +314,8 @@ resource "aws_iam_policy" "data_retrieval_resource_access" {
       ],
       "Effect": "Allow",
       "Resource": [
-          "${aws_sqs_queue.data_processing_queue.arn}"
+          "${aws_sqs_queue.data_processing_queue.arn}",
+          "${aws_sqs_queue.data_processing_dead_letter_queue.arn}"
       ]
     },
     {
@@ -407,6 +408,7 @@ resource "aws_lambda_function" "waze_data_processing_function"{
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-process.processDataFile"
     timeout = 300
+    reserved_concurrent_executions = 50 # limiting this so that we don't overwhelm the DB, leading to huge numbers of retries and high usage charges
     memory_size = 512 #TODO: JRS 2018-02-06 - test large files to see if we need more (or could get by with less) resources
     environment {
         variables = {
@@ -423,6 +425,7 @@ resource "aws_lambda_function" "waze_data_processing_function"{
             PGPASSWORD = "${postgresql_role.lambda_role.password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
+            POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
     tags {
@@ -449,6 +452,7 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
             PGPASSWORD = "${postgresql_role.lambda_role.password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
+            POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
     tags {
@@ -475,6 +479,7 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
             PGPASSWORD = "${postgresql_role.lambda_role.password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
+            POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
     tags {
@@ -501,6 +506,7 @@ resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
             PGPASSWORD = "${postgresql_role.lambda_role.password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
+            POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
     tags {

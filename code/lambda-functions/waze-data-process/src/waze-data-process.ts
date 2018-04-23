@@ -17,7 +17,7 @@ const sns = new AWS.SNS();
 
 const throttleOpts:throttle.Options = {
     failFast: true,
-    maxInProgress: 20
+    maxInProgress: parseInt(process.env.POOLSIZE)
 }
 
 //setup object hashing options once
