@@ -110,6 +110,9 @@ CREATE TABLE waze.irregularities
   "n_comments"                      INTEGER,
   "n_images"                        INTEGER,
   "line"                            JSONB,
+  "cause_type"                      TEXT,
+  "start_node"                      TEXT,
+  "end_node"                        TEXT,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
 
