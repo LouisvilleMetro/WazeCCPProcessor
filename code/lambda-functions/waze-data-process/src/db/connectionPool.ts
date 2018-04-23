@@ -15,11 +15,3 @@ export function getPool() {
     });
     return pool; 
 } 
-
-// end the connection pool so; must be called or lambda will steal connections for long periods
-export async function closePool() {
-    if(pool){
-        await pool.end();
-        pool = null;
-    }
-}

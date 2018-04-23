@@ -8,6 +8,7 @@ import * as db from './db';
 import util = require('util');
 import { PromiseResult } from 'aws-sdk/lib/request';
 import throttle = require('promise-parallel-throttle')
+import consolePatch from './consolePatch'
 
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS();
@@ -26,7 +27,10 @@ const hashOpts = {
 
 const processDataFile: Handler = async (event: any, context: Context, callback: Callback) => {
     try{
-
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+        
         //we'll loop and process as long as there are records and the queue 
         //and there is twice as much time left as the max loop time
         let isQueueDrained = false;
@@ -245,15 +249,14 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
         callback(err);
         return err;
     }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        //await db.closePool();
-    }
 };
 
 const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
     try{
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
         //get the startTimeMillis from the root of the file so we can use it later in our hashing 
@@ -317,15 +320,14 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
         callback(err);
         return err;
     }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        //await db.closePool();
-    }
 };
 
 const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
 	try{
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
         //get the startTimeMillis from the root of the file so we can use it later in our hashing 
@@ -412,16 +414,14 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
         callback(err);
         return err;
     }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        //await db.closePool();
-    }
 };
 
 const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
-	//TODO: JRS 2018-04-05 - IMPLEMENT THIS 
 	try{
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
         //get the startTimeMillis from the root of the file so we can use it later in our hashing 
@@ -500,11 +500,6 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
         console.error(err);
         callback(err);
         return err;
-    }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        //await db.closePool();
     }
 };
 
