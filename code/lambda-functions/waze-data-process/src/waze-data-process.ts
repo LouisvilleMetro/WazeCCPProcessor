@@ -7,11 +7,17 @@ import * as wazeTypes from './waze-types';
 import * as db from './db';
 import util = require('util');
 import { PromiseResult } from 'aws-sdk/lib/request';
+import throttle = require('promise-parallel-throttle')
 
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS();
 const lambda = new AWS.Lambda();
 const sns = new AWS.SNS();
+
+const throttleOpts:throttle.Options = {
+    failFast: true,
+    maxInProgress: 20
+}
 
 //setup object hashing options once
 const hashOpts = {
@@ -256,8 +262,8 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
         //also grab the data_file_id
         let data_file_id = event.data_file_id;
 
-        //loop through the alerts and process them all _asynchronously_
-        await Promise.all(event.alerts.map(async (alert:wazeTypes.alert) => {
+        //create a list of tasks to process alerts _asynchronously_
+        let taskList = event.alerts.map((alert:wazeTypes.alert) => async () => {
             //hash the whole alert along with the rootStart to get a unique id
             let alertHash = generateAJIUniqueIdentifierHash(alert, rootStart);
 
@@ -302,7 +308,9 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
 
                 await db.upsertCoordinateCommand(coord);
             }
-        }));
+        });
+        //run the tasks in a throttled fashion
+        await throttle.all(taskList, throttleOpts);
     }
 	catch (err) {
         console.error(err);
@@ -326,8 +334,8 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
         //also grab the data_file_id
         let data_file_id = event.data_file_id;
 
-        //loop through the jams and process them all _asynchronously_
-        await Promise.all(event.jams.map(async (jam:wazeTypes.jam) => {
+        //create a list of tasks to process jams _asynchronously_
+        let taskList = event.jams.map((jam:wazeTypes.jam) => async () => {
             //hash the whole jam along with the rootStart to get a unique id
             let jamHash = generateAJIUniqueIdentifierHash(jam, rootStart);
 
@@ -395,7 +403,9 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
                     await db.upsertCoordinateCommand(coord);
                 }
             }
-        }));
+        });
+        //run the tasks in a throttled fashion
+        await throttle.all(taskList, throttleOpts);
     }
 	catch (err) {
         console.error(err);
@@ -420,8 +430,8 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
         //also grab the data_file_id
         let data_file_id = event.data_file_id;
 
-        //loop through the irregs and process them all _asynchronously_
-        await Promise.all(event.irregularities.map(async (irregularity:wazeTypes.irregularity) => {
+        //create a list of tasks to process irregularities _asynchronously_
+        let taskList = event.irregularities.map((irregularity:wazeTypes.irregularity) => async () => {
             //hash the whole irreg along with the rootStart to get a unique id
             let irregularityHash = generateAJIUniqueIdentifierHash(irregularity, rootStart);
 
@@ -479,7 +489,9 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
                     await db.upsertCoordinateCommand(coord);
                 }
             }
-        }));
+        });
+        //run the tasks in a throttled fashion
+        await throttle.all(taskList, throttleOpts);
     }
 	catch (err) {
         console.error(err);
