@@ -87,6 +87,9 @@ export class Irregularity {
     n_images: number;
     line: string;
     datafile_id: number;
+    cause_type: string;
+    start_node: string;
+    end_node: string;
 }
 
 export class Coordinate {

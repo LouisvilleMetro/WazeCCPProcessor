@@ -7,11 +7,18 @@ import * as wazeTypes from './waze-types';
 import * as db from './db';
 import util = require('util');
 import { PromiseResult } from 'aws-sdk/lib/request';
+import throttle = require('promise-parallel-throttle')
+import consolePatch from './consolePatch'
 
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS();
 const lambda = new AWS.Lambda();
 const sns = new AWS.SNS();
+
+const throttleOpts:throttle.Options = {
+    failFast: true,
+    maxInProgress: 20
+}
 
 //setup object hashing options once
 const hashOpts = {
@@ -20,7 +27,10 @@ const hashOpts = {
 
 const processDataFile: Handler = async (event: any, context: Context, callback: Callback) => {
     try{
-
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+        
         //we'll loop and process as long as there are records and the queue 
         //and there is twice as much time left as the max loop time
         let isQueueDrained = false;
@@ -239,15 +249,14 @@ const processDataFile: Handler = async (event: any, context: Context, callback: 
         callback(err);
         return err;
     }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        await db.closePool();
-    }
 };
 
 const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
     try{
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
         //get the startTimeMillis from the root of the file so we can use it later in our hashing 
@@ -256,8 +265,8 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
         //also grab the data_file_id
         let data_file_id = event.data_file_id;
 
-        //loop through the alerts and process them all _asynchronously_
-        await Promise.all(event.alerts.map(async (alert:wazeTypes.alert) => {
+        //create a list of tasks to process alerts _asynchronously_
+        let taskList = event.alerts.map((alert:wazeTypes.alert) => async () => {
             //hash the whole alert along with the rootStart to get a unique id
             let alertHash = generateAJIUniqueIdentifierHash(alert, rootStart);
 
@@ -302,22 +311,23 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
 
                 await db.upsertCoordinateCommand(coord);
             }
-        }));
+        });
+        //run the tasks in a throttled fashion
+        await throttle.all(taskList, throttleOpts);
     }
 	catch (err) {
         console.error(err);
         callback(err);
         return err;
     }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        await db.closePool();
-    }
 };
 
 const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
 	try{
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
         //get the startTimeMillis from the root of the file so we can use it later in our hashing 
@@ -326,8 +336,8 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
         //also grab the data_file_id
         let data_file_id = event.data_file_id;
 
-        //loop through the jams and process them all _asynchronously_
-        await Promise.all(event.jams.map(async (jam:wazeTypes.jam) => {
+        //create a list of tasks to process jams _asynchronously_
+        let taskList = event.jams.map((jam:wazeTypes.jam) => async () => {
             //hash the whole jam along with the rootStart to get a unique id
             let jamHash = generateAJIUniqueIdentifierHash(jam, rootStart);
 
@@ -395,23 +405,23 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
                     await db.upsertCoordinateCommand(coord);
                 }
             }
-        }));
+        });
+        //run the tasks in a throttled fashion
+        await throttle.all(taskList, throttleOpts);
     }
 	catch (err) {
         console.error(err);
         callback(err);
         return err;
     }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        await db.closePool();
-    }
 };
 
 const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithInternalId, context: Context, callback: Callback) => {
-	//TODO: JRS 2018-04-05 - IMPLEMENT THIS 
 	try{
+        //patch the console so we can get more searchable logging
+        //would be nice to make this global, but couldn't quickly get that working
+        consolePatch();
+
         //the event we get will actually already be JSON parsed into an object, no need to parse manually
 
         //get the startTimeMillis from the root of the file so we can use it later in our hashing 
@@ -420,8 +430,8 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
         //also grab the data_file_id
         let data_file_id = event.data_file_id;
 
-        //loop through the irregs and process them all _asynchronously_
-        await Promise.all(event.irregularities.map(async (irregularity:wazeTypes.irregularity) => {
+        //create a list of tasks to process irregularities _asynchronously_
+        let taskList = event.irregularities.map((irregularity:wazeTypes.irregularity) => async () => {
             //hash the whole irreg along with the rootStart to get a unique id
             let irregularityHash = generateAJIUniqueIdentifierHash(irregularity, rootStart);
 
@@ -450,11 +460,14 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
                 update_date: irregularity.updateDate,
                 update_date_millis: irregularity.updateDateMillis,
                 update_utc_date: moment.utc(irregularity.updateDateMillis).toDate(),
-                is_highway: null,   //not in waze spec
-                n_comments: null,   //not in waze spec
-                n_images: null,     //not in waze spec
-                n_thumbs_up: null,  //not in waze spec
-                datafile_id: data_file_id
+                is_highway: irregularity.highway,
+                n_comments: irregularity.nComments,
+                n_images: irregularity.nImages,
+                n_thumbs_up: irregularity.nThumbsUp,
+                datafile_id: data_file_id,
+                cause_type: irregularity.causeType,
+                end_node: irregularity.endNode,
+                start_node: irregularity.startNode
             }
 
             //upsert the irreg
@@ -479,17 +492,14 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
                     await db.upsertCoordinateCommand(coord);
                 }
             }
-        }));
+        });
+        //run the tasks in a throttled fashion
+        await throttle.all(taskList, throttleOpts);
     }
 	catch (err) {
         console.error(err);
         callback(err);
         return err;
-    }
-    finally{
-        //be sure the DB connection pool is closed
-        //if not, lambda will hang on to connections for long periods
-        await db.closePool();
     }
 };
 

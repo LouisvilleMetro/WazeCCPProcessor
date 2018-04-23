@@ -48,7 +48,6 @@ export interface alert {
 }
 
 // type for irregularity objects from data file
-//TODO: JRS 20180419 - review this once we actually see a file with one in it, just in case docs weren't accurate
 export interface irregularity {
     id: string;
     detectionDate: string; //not sure about this one
@@ -70,6 +69,13 @@ export interface irregularity {
     jamLevel: number;
     driversCount: number;
     alertsCount: number;
+    highway: boolean;
+    causeType: string;
+    startNode: string;
+    endNode: string;
+    nComments: number;
+    nImages: number;
+    nThumbsUp: number;
 }
 
 // Type for the root data file

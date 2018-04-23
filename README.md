@@ -51,6 +51,10 @@ You can update the CF stack with new YAML as the code here gets updated, and it 
 
 ---
 
+## Notes on processing many files at once
+
+The system will queue up and process every file that gets added to the incoming data bucket.  This makes it easy to process any old files you may have already collected, or reprocess files later if changes are made that would require it.  If you should decide to dump a mass of files in the bucket, you may want to consider temporarily disabling all of the foreign keys.  Doing so will _greatly_ increase throughput, which also means reduced cost to run.  Disabling the foreign keys is not without risk, though, so it is advisable to create a backup beforehand and understand what you might need to do to clean up should inconsistent data get loaded while the keys are off.
+
 ## Current Plans
 
 We are working on writing more of the Cloud Formation YAML to take the stored S3 JSON files and process them into an AWS relational database.
