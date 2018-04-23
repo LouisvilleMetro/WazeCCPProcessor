@@ -460,11 +460,14 @@ const processDataIrregularities: Handler = async (event: wazeTypes.dataFileWithI
                 update_date: irregularity.updateDate,
                 update_date_millis: irregularity.updateDateMillis,
                 update_utc_date: moment.utc(irregularity.updateDateMillis).toDate(),
-                is_highway: null,   //not in waze spec
-                n_comments: null,   //not in waze spec
-                n_images: null,     //not in waze spec
-                n_thumbs_up: null,  //not in waze spec
-                datafile_id: data_file_id
+                is_highway: irregularity.highway,
+                n_comments: irregularity.nComments,
+                n_images: irregularity.nImages,
+                n_thumbs_up: irregularity.nThumbsUp,
+                datafile_id: data_file_id,
+                cause_type: irregularity.causeType,
+                end_node: irregularity.endNode,
+                start_node: irregularity.startNode
             }
 
             //upsert the irreg

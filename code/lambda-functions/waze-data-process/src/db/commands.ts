@@ -270,7 +270,10 @@ export async function upsertIrregularityCommand(irregularity: entities.Irregular
         n_comments, 
         n_images, 
         line, 
-        datafile_id
+        datafile_id,
+        cause_type,
+        start_node,
+        end_node
     )
     VALUES (
         $1,     -- id, 
@@ -300,7 +303,10 @@ export async function upsertIrregularityCommand(irregularity: entities.Irregular
         $25,    -- n_comments, 
         $26,    -- n_images, 
         $27,    -- line, 
-        $28     -- datafile_id
+        $28,    -- datafile_id
+        $29,    -- cause_type 
+        $30,    -- start_node
+        $31    -- end_node
     ) 
     ON CONFLICT (id) DO UPDATE SET 
         uuid  = $2,
@@ -329,7 +335,10 @@ export async function upsertIrregularityCommand(irregularity: entities.Irregular
         n_comments  = $25,
         n_images = $26,
         line = $27,
-        datafile_id = $28`;
+        datafile_id = $28,
+        cause_type = $29,
+        start_node = $30,
+        end_node = $31`;
     //#endregion
 
     let result = await connectionPool.getPool().query(sql, [
@@ -360,7 +369,10 @@ export async function upsertIrregularityCommand(irregularity: entities.Irregular
         irregularity.n_comments,            //n_comments 
         irregularity.n_images,              //n_images
         irregularity.line,                  //line
-        irregularity.datafile_id            //datafile_id
+        irregularity.datafile_id,           //datafile_id
+        irregularity.cause_type,            //cause_type
+        irregularity.start_node,            //start_node
+        irregularity.end_node               //end_node
     ]);
 
     //nothing currently to jam on the alert object based on SQL return
