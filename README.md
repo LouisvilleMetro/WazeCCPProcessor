@@ -32,11 +32,14 @@ We have an end-to-end data processor and database working that you can deploy.  
 4. Upload the zip files from step 3 to the S3 bucket you created in step 2.  
 
 
-### Preparing to run terraform
-
+### Preparing to run terraform for the first time
+See `/infrastructure/terraform/Readme.md`
 
 ### Running terraform
-
+1. Create a new local directory to run the Terraform code in.
+2. Run the following commands
+    - `terraform get <path to root of terraform scripts>\<environment folder>`
+    - `terraform init -from-module="<path to root of terraform scripts>\<environment folder>" -backend-config="<path to root of terraform scripts>\backend\config"`
 
 ### Running SQL schema creation script
 After the stack is up and running
@@ -76,7 +79,7 @@ The system will queue up and process every file that gets added to the incoming 
 
 ## Costs
 
-This config stands up infrastructure that is mostly cheap/free (depending on usage), but the database itself is pretty powerful and will result in monthly charges in excess of $200 (as of this writing).  We are working on ways to reduce the costs and you can help out on this [issue](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues/32)
+This config stands up infrastructure that is mostly cheap/free (depending on usage), but the database itself is pretty powerful and will result in monthly charges in excess of $200 (as of this writing).  We are working on ways to reduce the costs and you can help out on this [issue](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues/32).
 
 ## Current Plans
 
@@ -95,3 +98,4 @@ If you'd like a little more background on Louisville and what our city has been 
 1. [Louisville Waze Internal Hackathon Recap](https://medium.com/louisville-metro-opi2/waze-louisvilles-first-internal-hackathon-647363a85392)
 2. [Harvard Civic Analytics Network Presentation - Slides](https://docs.google.com/presentation/d/1esPVvhuIRjD199rN8aimK_XcmCt0pJOkjEIyCMhGKks/)
 3. [Waze April 2018 Monthly Call - Slides](https://docs.google.com/presentation/d/1loAV4BDAUyXdrn44QoLmYiwZdLmL59C4jvJGlZ1a-AY/)
+4. [Open Government Coalition](https://www.govintheopen.com/)
