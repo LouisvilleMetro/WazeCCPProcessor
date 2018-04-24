@@ -8,3 +8,7 @@ node_modules/
 code/lambda-functions/waze-data-process/built/
 
 code/lambda-functions/waze-data-process/dist/
+
+code/lambda-functions/waze-data-download/built/
+
+code/lambda-functions/waze-data-download/dist/
