@@ -16,9 +16,7 @@ See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects)
 
 ## What is Completed
 
-We have an end-to-end data processor and database working that you can deploy.  
-
-Right now it starts saving your CCP data as JSON files to an S3 bucket every 2 minutes, which you should be doing if you are a CCP partner.
+We have an end-to-end data processor and database working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
 
 **Here are the steps to make it work:**
 
