@@ -23,14 +23,13 @@ Right now it starts saving your CCP data as JSON files to an S3 bucket every 2 m
 Here are the steps to make it work:
 
 1. Log into your own AWS console.
-2. Created a new [S3 bucket](https://s3.console.aws.amazon.com/s3/home), *eg 'waze-artifacts-your-city'*. It needs read/write permissions only for your AWS console account. You only have to do this step one time.
+2. Create a new [S3 bucket](https://s3.console.aws.amazon.com/s3/home), *eg 'waze-artifacts-your-city'*. It needs read/write permissions only for your AWS console account. You only have to do this step one time.
 3. Create your lambda functions. 
     - Make sure NVM, NPM, and Node are updated on your machine first.
-    - Run *'npm install'* on the *waze-data-download.js* code in **[code/lambda-functions/waze-data-download](code/lambda-functions/waze-data-download)**, then zip the results up. 
-      - TODO: JRS 20180412 - Convert the downloader to typescript, setup webpack, etc. so it also is as simple as just `npm install`  
+    - Run *'npm install'* on the *waze-data-download* code in **[code/lambda-functions/waze-data-download](code/lambda-functions/waze-data-download)**.  This should install dependencies, build, and output a zip file at `code/lambda-functions/waze-data-download.zip` locally.  
     - Run *'npm install'* on the *waze-data-process* code in **[code/lambda-functions/waze-data-process](code/lambda-functions/waze-data-process)**.  This should install dependencies, build, and output a zip file at `code/lambda-functions/waze-data-process.zip` locally.
     - Alternatively, you can use our zip files at **[code/lambda-functions/waze-data-download.zip](code/lambda-functions/waze-data-download.zip)** and **[code/lambda-functions/waze-data-process.zip](code/lambda-functions/waze-data-process.zip)**.
-4. Upload the zip file from step 3 to the S3 bucket you created in step 2.  
+4. Upload the zip files from step 3 to the S3 bucket you created in step 2.  
 
 ---
 
