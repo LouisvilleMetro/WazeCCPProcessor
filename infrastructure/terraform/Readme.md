@@ -7,9 +7,6 @@
 
 - There are values in both `backend/config` and `modules/globals/globals.tf` that need to be updated to match your setup.  Please refer to other readme files and comments for more info.
 
-- **IMPORTANT** - This config stands up infrastructure that is mostly cheap/free (depending on usage), but the database itself is pretty powerful and will result in monthly charges in excess of $200 (as of this writing).
-
-
 ## Terraform Example Commands
 
 I like to run terraform in an empty directory away from the storage location of the actual files, so that I know I won't accidentally mess anything up or commit things that shouldn't be, so these examples reflect that.  Adjust accordingly for your usage.
