@@ -34,19 +34,23 @@ resource "aws_cloudwatch_metric_alarm" "processing_dead_letter_queue_alarm" {
     # we'll only create this alarm if the associated var is true
     count = "${var.enable_data_processor_dlq_sns_topic == "true" ? 1 : 0}"
     alarm_name                = "${var.object_name_prefix}-waze-data-processing-dlq-receive-alarm"
-    comparison_operator       = "GreaterThanOrEqualToThreshold"
-    evaluation_periods        = "1"
-    metric_name               = "NumberOfMessagesReceived"
-    namespace                 = "AWS/SQS"
+    comparison_operator = "GreaterThanThreshold"
+    evaluation_periods  = "1"
+    metric_name         = "NumberOfMessagesSent"
+    namespace           = "AWS/SQS"
+    
     dimensions {
         QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
     }
-    period                    = "300"
-    statistic                 = "Sum"
-    threshold                 = "1"
-    alarm_description         = "This metric monitors sqs message receipt in the dead letter queue"
-    alarm_actions             = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
-    treat_missing_data        = "notBreaching"
+
+    period             = "300"
+    datapoints_to_alarm= "1"
+    evaluation_periods = "2"
+    statistic          = "Sum"
+    threshold          = "0"
+    alarm_description  = "This alarm monitors messages being added to the intake dead letter queue"
+    alarm_actions      = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
+    treat_missing_data = "missing"
 }
 
 # create a cloudwatch alarm to alert on the dead letter queue if items are in it for 24 hours
