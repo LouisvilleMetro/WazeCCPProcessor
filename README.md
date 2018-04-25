@@ -30,7 +30,7 @@ We have an end-to-end data processor and database working that you can deploy.  
 
 *Note: when finished deploying the code, remove this admin user for security. We could build a policy for this in the future.*
 
-**Create State Management Bucket
+**Create State Management Bucket**
 
 1. Go to [S3](https://s3.console.aws.amazon.com/s3/home), create bucket ‘waze-terraform-state-management-CITYNAME’, default properties and permissions, create.
 2. Choose a region that has all services needed. Note your region for later.
@@ -46,14 +46,16 @@ Go to S3, create bucket ‘waze-terraform-artifacts-CITYNAME’, default propert
 1. On your desktop, go to `/infrastructure/terraform/backend/config` and edit the file.  Add the name of your state management bucket "waze-terraform-state-management-CITYNAME", and region (eg. "us-east-1").
 1. Go to `/infrastructure/terraform/modules/globals/globals.tf` and update the following:
 
-`# region where resources will be created by default
+```
+# region where resources will be created by default
 output "default_resource_region" { value = "us-east-1" }
 
 # Bucket where artifacts, such as lambda code bundles, are stored
 output "s3_artifacts_bucket" { value = "waze-terraform-artifacts-CITYNAME" }
 output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA FULL HTTP URL HERE" }
 output "rds_master_username" { value = "YOUR DESIRED DB USER NAME HERE" }
-output "rds_master_password" { value = "YOUR DESIRED DB PASSWORD HERE" }`
+output "rds_master_password" { value = "YOUR DESIRED DB PASSWORD HERE" }
+```
 
 ### Preparing to run Terraform for the first time
 See `/infrastructure/terraform/Readme.md`
