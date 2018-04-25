@@ -130,7 +130,7 @@ resource "aws_sqs_queue" "data_processing_queue" {
     delay_seconds = "0"
     receive_wait_time_seconds = "20"
     visibility_timeout_seconds = "360"
-    redrive_policy = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.data_processing_dead_letter_queue.arn}\",\"maxReceiveCount\":5}"
+    redrive_policy = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.data_processing_dead_letter_queue.arn}\",\"maxReceiveCount\":8}"
     tags {
         Environment = "${var.environment}"
         Scripted = "true"
@@ -425,8 +425,8 @@ resource "aws_lambda_function" "waze_data_processing_function"{
             JAMPROCESSORARN = "${aws_lambda_function.waze_data_jams_processing_function.arn}"
             IRREGULARITYPROCESSORARN = "${aws_lambda_function.waze_data_irregularities_processing_function.arn}"
             PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
-            PGUSER = "${postgresql_role.lambda_role.name}"
-            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGUSER = "${var.lambda_db_username}"
+            PGPASSWORD = "${var.lambda_db_password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
@@ -452,8 +452,8 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
     environment {
         variables = {
             PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
-            PGUSER = "${postgresql_role.lambda_role.name}"
-            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGUSER = "${var.lambda_db_username}"
+            PGPASSWORD = "${var.lambda_db_password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
@@ -479,8 +479,8 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
     environment {
         variables = {
             PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
-            PGUSER = "${postgresql_role.lambda_role.name}"
-            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGUSER = "${var.lambda_db_username}"
+            PGPASSWORD = "${var.lambda_db_password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
@@ -506,8 +506,8 @@ resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
     environment {
         variables = {
             PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
-            PGUSER = "${postgresql_role.lambda_role.name}"
-            PGPASSWORD = "${postgresql_role.lambda_role.password}"
+            PGUSER = "${var.lambda_db_username}"
+            PGPASSWORD = "${var.lambda_db_password}"
             PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
             PGPORT = "${var.rds_port}"
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
@@ -655,44 +655,4 @@ resource "aws_rds_cluster_instance" "waze_database_instances" {
     Name = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
     Environment = "${var.environment}"
   }
-}
-
-################################################
-# POSTGRESQL
-################################################
-
-# setup the pg provider
-provider "postgresql" {
-    host            = "${aws_rds_cluster.waze_database_cluster.endpoint}"
-    port            = "${var.rds_port}"
-    database        = "${aws_rds_cluster.waze_database_cluster.database_name}"
-    username        = "${var.rds_master_username}"
-    password        = "${var.rds_master_password}"
-}
-
-# generate a random string for the password
-resource "random_string" "password" {
-    length = 24
-    special = true
-}
-
-# setup the new role
-resource "postgresql_role" "lambda_role" {
-    name     = "lambda_role"
-    login    = true
-    password = "${random_string.password.result}"
-
-}
-
-# setup the schema
-resource "postgresql_schema" "waze_schema" {
-    name  = "waze"
-    owner = "${var.rds_master_username}"
-    if_not_exists = true
-
-    policy {
-        create_with_grant = true
-        usage_with_grant  = true
-        role              = "${postgresql_role.lambda_role.name}"
-    }
 }

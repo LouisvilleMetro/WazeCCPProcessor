@@ -30,3 +30,9 @@ output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA URL HERE" }
 output "rds_master_username" { value = "YOUR DESIRED USER NAME HERE" }
 
 output "rds_master_password" { value = "YOUR DESIRED PASSWORD HERE" }
+
+# set a username that we'll later make sure exists in the db
+output "lambda_db_username" { value = "YOUR USERNAME FOR LAMBDA IN POSTGRES"}
+
+# set a password that we'll later make sure exists in the db on the user above
+output "lambda_db_password" { value = "YOUR PASSWORD FOR LAMBDA IN POSTGRES"}
