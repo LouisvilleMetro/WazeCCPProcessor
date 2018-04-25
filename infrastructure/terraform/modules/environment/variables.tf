@@ -48,6 +48,7 @@ variable "max_concurrent_db_connections_per_lambda" {
 variable "lambda_db_username" {
     type = "string"
     description = "The username lambda will use when connecting to the database"
+    default = "lambda_role"
 }
 
 variable "lambda_db_password" {

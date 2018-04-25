@@ -33,7 +33,6 @@ module "environment" {
     waze_data_url = "${module.globals.waze_data_url}" # see globals.tf to change
     rds_master_username = "${module.globals.rds_master_username}" # see globals.tf to change
     rds_master_password = "${module.globals.rds_master_password}" # see globals.tf to change
-    lambda_db_username = "${module.globals.lambda_db_username}" # see globals.tf to change
     lambda_db_password = "${module.globals.lambda_db_password}" # see globals.tf to change
     
     # Remove the comment from this variable to set your own CIDR block range to avoid conflicts

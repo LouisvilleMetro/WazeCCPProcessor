@@ -47,8 +47,7 @@ output "default_resource_region" { value = "us-east-1" }
 output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA FULL HTTP URL HERE" }
 output "rds_master_username" { value = "YOUR DESIRED DB USER NAME HERE" }
 output "rds_master_password" { value = "YOUR DESIRED DB ADMIN PASSWORD HERE" }
-output "lambda_db_username" { value = "YOUR DESIRED DB ADMIN USER HERE"}
-output "lambda_db_password" { value = "YOUR DESIRED DB PASSWORD HERE"}
+output "lambda_db_password" { value = "YOUR DESIRED PASSWORD FOR THE LAMBDA USER HERE"}
 ```
 
 ### Setup Terraform for the First Time
@@ -72,7 +71,9 @@ output "lambda_db_password" { value = "YOUR DESIRED DB PASSWORD HERE"}
 ### Running SQL schema creation script
 After the stack is up and running use you favorite PostGres connection client (eg, DBeaver, pgAdmin) and connect to the db_cluster_endpoint from above using your specified rds_master_username and rds_master_password.
 
-1. Open /code/sql/schema.sql and run script in your DB client. 
+1. Open /code/sql/schema.sql
+2. Update the password for the lambda_role (near the top) to match what you provided in terraform
+3. Run script in your DB client
 
 *Note: this is a manual process for now to ensure DB updates are applied accurately for the moment.*
 
