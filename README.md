@@ -57,11 +57,14 @@ output "rds_master_username" { value = "YOUR DESIRED DB USER NAME HERE" }
 output "rds_master_password" { value = "YOUR DESIRED DB PASSWORD HERE" }
 ```
 
-### Preparing to run Terraform for the first time
-See `/infrastructure/terraform/Readme.md`
+### Setup Terraform for the First Time
+
+1. Download the [latest version](https://www.terraform.io/downloads.html) v0.11, unzip, and [set the path](https://www.terraform.io/intro/getting-started/install.html) (eg, sudo ln -s terraform terraform).
+1. Verify your version is correct by running `terraform --version`.
 
 ### Running Terraform
-In your terminal go to your `/infrastructure/terraform/environment/env-dev` directory
+1. In your terminal go to your `/infrastructure/terraform/environment/env-dev` directory (use env-dev for a development/test deployment, or env-prod for production level deployment)
+    - The differences between dev and prod are... (?)
 1. Run the following commands
     - `terraform get`
     - `terraform init -backend-config="../../backend/config"`
@@ -77,7 +80,8 @@ After the stack is up and running use you favorite PostGres connection client (e
 *Note: this is a manual process for now to ensure DB updates are applied accurately for the moment.*
 
 ### Using the optional SNS notifications
-Details coming soon.
+
+Details coming soon. (?)
 
 ### Clean Up
 
