@@ -45,7 +45,6 @@ Go to S3, create bucket ‘waze-terraform-artifacts-CITYNAME’, default propert
 1. Go to `/code/lambda-functions/` and place the 2 zip files there into your AWS artifacts bucket "waze-terraform-artifacts-CITYNAME", with default permissions.
 1. On your desktop, go to `/infrastructure/terraform/backend/config` and edit the file.  Add the name of your state management bucket "waze-terraform-state-management-CITYNAME", and region (eg. "us-east-1").
 1. Go to `/infrastructure/terraform/modules/globals/globals.tf` and update the following:
-
 ```
 # region where resources will be created by default
 output "default_resource_region" { value = "us-east-1" }
@@ -65,6 +64,9 @@ output "rds_master_password" { value = "YOUR DESIRED DB PASSWORD HERE" }
 ### Running Terraform
 1. In your terminal go to your `/infrastructure/terraform/environment/env-dev` directory (use env-dev for a development/test deployment, or env-prod for production level deployment)
     - The differences between dev and prod are... (?)
+1. Set session variables for Terraform with access keys from AWS IAM user:
+    - `export AWS_ACCESS_KEY_ID="YOUR IAM USER ACCESS KEY"`
+    - `export AWS_SECRET_ACCESS_KEY_ID="YOUR IAM USER SECRET ACCESS KEY"`
 1. Run the following commands
     - `terraform get`
     - `terraform init -backend-config="../../backend/config"`
