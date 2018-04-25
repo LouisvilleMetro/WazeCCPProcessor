@@ -138,6 +138,9 @@ CREATE TABLE waze.roads
   "name"                            VARCHAR(100) NOT NULL
 );
 
+ALTER TABLE waze.roads
+  ADD CONSTRAINT roads_unique_combo UNIQUE(value, name);
+
 CREATE TABLE waze.alert_types 
 (
   "id"                              SERIAL PRIMARY KEY NOT NULL,
