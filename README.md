@@ -14,7 +14,7 @@ Then you can store, analyze, query, extract live and historic data for your city
 
 See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) area for how you can help, and the [Wiki](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki) for all the details.
 
-## What is Completed
+## Deploy the Solution to Your Cloud
 
 We have an end-to-end data processor and database working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
 
@@ -23,42 +23,65 @@ We have an end-to-end data processor and database working that you can deploy.  
 ### AWS setup
 
 1. Log into your own AWS console.
-2. Create a new [S3 bucket](https://s3.console.aws.amazon.com/s3/home), *eg 'waze-artifacts-your-city'*. It needs read/write permissions only for your AWS console account. You only have to do this step one time.
-3. Create your lambda functions. 
-    - Make sure NVM, NPM, and Node are updated on your machine first.
-    - Run *'npm install'* on the *waze-data-download* code in **[code/lambda-functions/waze-data-download](code/lambda-functions/waze-data-download)**.  This should install dependencies, build, and output a zip file at `code/lambda-functions/waze-data-download.zip` locally.  
-    - Run *'npm install'* on the *waze-data-process* code in **[code/lambda-functions/waze-data-process](code/lambda-functions/waze-data-process)**.  This should install dependencies, build, and output a zip file at `code/lambda-functions/waze-data-process.zip` locally.
-    - Alternatively, you can use our zip files at **[code/lambda-functions/waze-data-download.zip](code/lambda-functions/waze-data-download.zip)** and **[code/lambda-functions/waze-data-process.zip](code/lambda-functions/waze-data-process.zip)**.
-4. Upload the zip files from step 3 to the S3 bucket you created in step 2.  
 
+**Create IAM User**
+1. Go to IAM, Add User, name ‘waze_terraform_user’. Chose programmatic access, attach policy directly: Administrator Access. Create User.
+2. Copy access key and secret access key
 
-### Preparing to run terraform for the first time
+*Note: when finished deploying the code, remove this admin user for security. We could build a policy for this in the future.*
+
+**Create State Management Bucket
+
+1. Go to [S3](https://s3.console.aws.amazon.com/s3/home), create bucket ‘waze-terraform-state-management-CITYNAME’, default properties and permissions, create.
+2. Choose a region that has all services needed. Note your region for later.
+
+**Create Artifacts Bucket**
+
+Go to S3, create bucket ‘waze-terraform-artifacts-CITYNAME’, default properties and permissions, create.
+
+### Download Git Repo Code and Configure
+
+1. Download this repo to a folder on your computer.
+1. Go to `/code/lambda-functions/` and place the 2 zip files there into your AWS artifacts bucket "waze-terraform-artifacts-CITYNAME", with default permissions.
+1. On your desktop, go to `/infrastructure/terraform/backend/config` and edit the file.  Add the name of your state management bucket "waze-terraform-state-management-CITYNAME", and region (eg. "us-east-1").
+1. Go to `/infrastructure/terraform/modules/globals/globals.tf` and update the following:
+
+`# region where resources will be created by default
+output "default_resource_region" { value = "us-east-1" }
+
+# Bucket where artifacts, such as lambda code bundles, are stored
+output "s3_artifacts_bucket" { value = "waze-terraform-artifacts-CITYNAME" }
+output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA FULL HTTP URL HERE" }
+output "rds_master_username" { value = "YOUR DESIRED DB USER NAME HERE" }
+output "rds_master_password" { value = "YOUR DESIRED DB PASSWORD HERE" }`
+
+### Preparing to run Terraform for the first time
 See `/infrastructure/terraform/Readme.md`
 
-### Running terraform
-1. Create a new local directory to run the Terraform code in.
-2. Run the following commands
-    - `terraform get <path to root of terraform scripts>\<environment folder>`
-    - `terraform init -from-module="<path to root of terraform scripts>\<environment folder>" -backend-config="<path to root of terraform scripts>\backend\config"`
+### Running Terraform
+In your terminal go to your `/infrastructure/terraform/environment/env-dev` directory
+1. Run the following commands
+    - `terraform get`
+    - `terraform init -backend-config="../../backend/config"`
+    - `terraform plan`
+    - `terraform apply`
+1. Make a note of db_cluster_endpoint value that will be output when Terraform completes.
 
 ### Running SQL schema creation script
-After the stack is up and running
+After the stack is up and running use you favorite PostGres connection client (eg, DBeaver, pgAdmin) and connect to the db_cluster_endpoint from above using your specified rds_master_username and rds_master_password.
+
+1. Open /code/sql/schema.sql and run script in your DB client. 
+
+*Note: this is a manual process for now to ensure DB updates are applied accurately for the moment.*
 
 ### Using the optional SNS notifications
+Details coming soon.
 
+### Clean Up
 
----
+Go to your AWS IAM area and delete the `waze_terraform_user` you created.
 
-### Everything between the horizontal lines needs to be revisited for new setup - JRS
-
-5. Create a new [Cloud Formation](https://console.aws.amazon.com/cloudformation/home) stack and run the YAML at [infrastructure/cloudformation/WazeProcessorStack.yml](infrastructure/cloudformation/WazeProcessorStack.yml).
-6. You will be prompted for 3 variables:
-  * **EnvironmentName**: Enter name of the environment (Dev, Test, Prod, etc). This allows you to deploy and test updates easily.
-  * **S3ArtifactsBucket**: Enter the S3 bucket name from step 2 where you put your Lambda functions from step 4.
-  * **WazeDataHttpUrl**: Full URL to the Waze CCP data feed provided to you by Waze.
-
-
----
+## Finished Result
 
 This creates an infrastructure stack which has pings your custom Waze CCP data feed every 2 minutes and save the JSON to a new bucket, which then gets processed into the relational database.  There is error handling and also notification options for when things go right or wrong.  
 
@@ -66,8 +89,7 @@ Here's what was created:
 
 ![Waze Current Architecture](docs/Current%20Architecture.png "Waze Current Architecture")
 
-? You can update the stack with new infrastructure as the code here gets updated, and it only affects new and changed items. You can also remove all the infrastructure automatically (minus the S3 bucket you created manually) by deleting the Terraform stack. 
-
+You can update the stack with new infrastructure as the code here gets updated, and it only affects new and changed items. You can also remove all the infrastructure automatically (minus the S3 bucket you created manually) by deleting the Terraform stack using `terraform destroy` after the `get` and `init` commands. 
 
 ## Loading Historic JSON Data Files
 
