@@ -24,9 +24,9 @@ command call if you do.
 > aws s3api create-bucket --bucket YOUR-UNIQUE-ARTIFACT-BUCKET-NAME --region us-east-1
 
 
-3. (Optional) Terraform state management bucket
+3. Terraform state management bucket
 ------------------
-If using Terraform for provisioning, and using S3 state management (which is
+Because we are using Terraform for provisioning and using S3 state management (which is
 the setup in the supplied Terraform scripts), you'll also need a bucket for
 storing Terraform state.
 
