@@ -1,6 +1,5 @@
 variable "environment" { type = "string" }
 variable "default_resource_region" { type = "string" }
-variable "s3_artifacts_bucket" { type = "string" }
 variable "waze_data_url" { type = "string" }
 variable "object_name_prefix" { type = "string"}
 
@@ -54,4 +53,9 @@ variable "lambda_db_username" {
 variable "lambda_db_password" {
     type = "string"
     description = "The password lambda will use when connecting to the database"
+}
+
+variable "lambda_artifacts_path" {
+    type = "string"
+    description = "Path to directory containing zip files for lambda deployment"
 }

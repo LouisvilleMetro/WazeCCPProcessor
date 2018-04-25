@@ -16,6 +16,9 @@ resource "aws_cloudwatch_event_rule" "data_retrieval_timer" {
 
 # setup a target for the event
 resource "aws_cloudwatch_event_target" "data_retrieval_timer_target" { 
+    # make this depend on the DB being up, so that we don't start grabbing files before the database even exists
+    # there's still a required step of running the sql schema script, but this will at least limit errors
+    depends_on = ["aws_rds_cluster_instance.waze_database_instances"] 
     rule = "${aws_cloudwatch_event_rule.data_retrieval_timer.name}"
     arn  = "${aws_lambda_function.waze_data_retrieval_function.arn}"
 }
@@ -365,18 +368,9 @@ resource "aws_iam_role_policy_attachment" "data_retrieval_lambda_basic_logging_r
 # Lambdas
 ################################################
 
-# get info about the artifact for the data retrieval lambda
-data "aws_s3_bucket_object" "waze_data_retrieval_function_artifact" {
-  bucket = "${var.s3_artifacts_bucket}"
-  key    = "waze-data-download.zip"
-}
-
 # setup data retrieve lambda
 resource "aws_lambda_function" "waze_data_retrieval_function"{
-    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_retrieval_function_artifact.bucket}"
-    s3_key            = "${data.aws_s3_bucket_object.waze_data_retrieval_function_artifact.key}"
-    s3_object_version = "${data.aws_s3_bucket_object.waze_data_retrieval_function_artifact.version_id}"
-
+    filename = "${var.lambda_artifacts_path}/waze-data-download.zip"
     function_name = "${var.object_name_prefix}-waze-data-retrieval"
     runtime = "nodejs6.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -396,17 +390,9 @@ resource "aws_lambda_function" "waze_data_retrieval_function"{
     }
 }
 
-# get info about the artifact for the data processing lambda
-data "aws_s3_bucket_object" "waze_data_processing_function_artifact" {
-  bucket = "${var.s3_artifacts_bucket}"
-  key    = "waze-data-process.zip"
-}
-
 # setup data processing lambda
 resource "aws_lambda_function" "waze_data_processing_function"{
-    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
-    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
-    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
+    filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
     function_name = "${var.object_name_prefix}-waze-data-processing"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -440,9 +426,7 @@ resource "aws_lambda_function" "waze_data_processing_function"{
 
 # setup alert processing lambda
 resource "aws_lambda_function" "waze_data_alerts_processing_function"{
-    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
-    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
-    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
+    filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
     function_name = "${var.object_name_prefix}-waze-data-alerts-processing"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -467,9 +451,7 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
 
 # setup jams processing lambda
 resource "aws_lambda_function" "waze_data_jams_processing_function"{
-    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
-    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
-    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
+    filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
     function_name = "${var.object_name_prefix}-waze-data-jams-processing"
     runtime = "nodejs6.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -494,9 +476,7 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
 
 # setup irregularities processing lambda
 resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
-    s3_bucket         = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.bucket}"
-    s3_key            = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.key}"
-    s3_object_version = "${data.aws_s3_bucket_object.waze_data_processing_function_artifact.version_id}"
+    filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
     function_name = "${var.object_name_prefix}-waze-data-irregularities-processing"
     runtime = "nodejs6.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"

@@ -22,9 +22,6 @@ output "object_name_prefix" { value = "${lower(var.environment)}-tf"}
 # region where resources will be created by default
 output "default_resource_region" { value = "us-east-1" }
 
-# Bucket where artifacts, such as lambda code bundles, are stored
-output "s3_artifacts_bucket" { value = "YOUR ARTIFACT BUCKET NAME HERE" }
-
 output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA URL HERE" }
 
 output "rds_master_username" { value = "YOUR DESIRED USER NAME HERE" }

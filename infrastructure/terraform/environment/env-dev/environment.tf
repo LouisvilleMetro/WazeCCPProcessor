@@ -30,7 +30,6 @@ module "environment" {
     empty_s3_buckets_before_destroy = "true"
 
     default_resource_region = "${module.globals.default_resource_region}" # see globals.tf to change
-    s3_artifacts_bucket = "${module.globals.s3_artifacts_bucket}" # see globals.tf to change
     waze_data_url = "${module.globals.waze_data_url}" # see globals.tf to change
     rds_master_username = "${module.globals.rds_master_username}" # see globals.tf to change
     rds_master_password = "${module.globals.rds_master_password}" # see globals.tf to change
@@ -39,4 +38,7 @@ module "environment" {
     
     # Remove the comment from this variable to set your own CIDR block range to avoid conflicts
     # rds_vpc_cidr_block = "10.20.0.0/16"
+
+    # if you're not running this in the local directory, you'll likely need to update this value
+    lambda_artifacts_path = "../../../../code/lambda-functions"
 }
