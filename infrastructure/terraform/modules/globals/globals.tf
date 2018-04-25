@@ -28,5 +28,5 @@ output "rds_master_username" { value = "YOUR DESIRED USER NAME HERE" }
 
 output "rds_master_password" { value = "YOUR DESIRED PASSWORD HERE" }
 
-# set a password that we'll later make sure exists in the db on the user above
+# set a password that we'll later make sure exists in the db on the lambda_role user
 output "lambda_db_password" { value = "YOUR PASSWORD FOR LAMBDA IN POSTGRES"}
