@@ -57,7 +57,8 @@ output "lambda_db_password" { value = "YOUR DESIRED PASSWORD FOR THE LAMBDA USER
 
 ### Running Terraform
 1. In your terminal go to your `/infrastructure/terraform/environment/env-dev` directory (use env-dev for a development/test deployment, or env-prod for production level deployment)
-    - The differences between dev and prod are... (?)
+    - The dev environment has options set that will allow destroying everything with no extra work other than `terraform destroy`
+    - The prod environment has options set that will prevent destroying the database unless you have taken a final snapshot and will prevent destroying the S3 buckets if there are files in them.  This is done to help protect prod data from accidental, unrecoverable destruction.
 1. Set session variables for Terraform with access keys from AWS IAM user:
     - `export AWS_ACCESS_KEY_ID="YOUR IAM USER ACCESS KEY"`
     - `export AWS_SECRET_ACCESS_KEY="YOUR IAM USER SECRET ACCESS KEY"`
