@@ -66,7 +66,7 @@ output "rds_master_password" { value = "YOUR DESIRED DB PASSWORD HERE" }
     - The differences between dev and prod are... (?)
 1. Set session variables for Terraform with access keys from AWS IAM user:
     - `export AWS_ACCESS_KEY_ID="YOUR IAM USER ACCESS KEY"`
-    - `export AWS_SECRET_ACCESS_KEY_ID="YOUR IAM USER SECRET ACCESS KEY"`
+    - `export AWS_SECRET_ACCESS_KEY="YOUR IAM USER SECRET ACCESS KEY"`
 1. Run the following commands
     - `terraform get`
     - `terraform init -backend-config="../../backend/config"`
@@ -119,7 +119,7 @@ See our [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects)
 
 **We would like to collaborate with you!**  Please suggest updates, work on the [help wanted issues](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), collaborate on the Wiki, etc.  It would be great to work together to get the best solution, use cases, and finish faster.   
 
-We've build out the code in [Terraform](http://www.terraform.io) and supported AWS at first, but would like it to be deployed to any cloud provider.  See our [Issues area](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues) for how you can help with this.
+We've build out the code in [Terraform](http://www.terraform.io) and supported AWS at first, but would like it to be deployed to any cloud provider.  See our [Issues](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues) area for how you can help with this.
 
 ## Background
 
