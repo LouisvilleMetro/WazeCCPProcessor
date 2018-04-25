@@ -79,7 +79,17 @@ After the stack is up and running use you favorite PostGres connection client (e
 
 ### Using the optional SNS notifications
 
-Details coming soon. (?)
+The system makes use of several SNS topics that can optionally be subscribed to in order to receive notifications or trigger other events.  Currently there are 4 topics available:
+  - File received: notification that fires every time a file is added to the incoming S3 bucket
+  - File processed: notification that fires when we've finished processing a file; this is optional sending notifications to this topic can be disabled in terraform
+  - Records in dead-letter queue: sends notifications when records are in the dead-letter queue; this is optional sending notifications to this topic can be disabled in terraform
+  - Records in work queue: notification that fires if there are records in the work queue that need to be processed; because of the nature of the queue, there may not _actually_ be anything left in the queue when the notification is sent
+
+Example usages of these topics:
+  - Subscribe with email to the "Records in dead-letter queue" topic to get an email when things go to that queue (usually indicates errors)
+  - Subscribe a web hook to the "File processed" notification to kick off an external process that needs to read the new data from the database
+
+The ARNs for each of the topics can be found in the outputs after running terraform. 
 
 ### Clean Up
 
