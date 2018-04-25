@@ -1,54 +1,121 @@
 # WazeCCPProcessor
 
-Takes [Waze CCP](https://www.waze.com/ccp) data feed and processes it in Amazon AWS for querying.
+Takes [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database for querying, analysis, API hooks, and mapping.
 
 ## Overview
 
-Louisville is looking to create an automated AWS Waze processing solution that can be replicated by any CCP Partner.
+Louisville is creating an automated cloud processing solution that can be replicated by any CCP Partner, with the help of other govs, partners, and sponsors.
 
-You grab this Cloud Formation code and deploy the infrastructure stack to your AWS.
+You grab this [Terraform.io](http://www.terraform.io) code and deploy the infrastructure stack (currently AWS but cloud agnostic).
 
 You enter your CCP data feed URL as a parameter.
 
-Then you can analyze, query, extract live and historic data for your city.
+Then you can store, analyze, query, extract live and historic data for your city.
 
 See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) area for how you can help, and the [Wiki](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki) for all the details.
 
-## What is Completed
+## Deploy the Solution to Your Cloud
 
-Currently we have a Cloud Formation template working that you can deploy.  
+We have an end-to-end data processor and database working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
 
-Right now it starts saving your CCP data as JSON files to an S3 bucket every 2 minutes, which you should be doing if you are a CCP partner.
+**Here are the steps to make it work:**
 
-Here are the steps to make it work:
+### AWS setup
 
 1. Log into your own AWS console.
-2. Created a new [S3 bucket](https://s3.console.aws.amazon.com/s3/home), *eg 'waze-artifacts-your-city'*. It needs read/write permissions only for your AWS console account. You only have to do this step one time.
-3. Create your lambda functions. Run *'npm install'* on the *waze-data-download.js* code in **[code/lambda-functions/waze-data-download](code/lambda-functions/waze-data-download)**, then zip the results up. Make sure NVM, NPM, and Node are updated on your machine first.  Alternatively, you can use our zip file at **[code/lambda-functions/waze-data-download.zip](code/lambda-functions/waze-data-download.zip)**.
-4. Upload the zip file from step 3 to the S3 bucket you created in step 2.  
-5. Create a new [Cloud Formation](https://console.aws.amazon.com/cloudformation/home) stack and run the YAML at [infrastructure/cloudformation/WazeProcessorStack.yml](infrastructure/cloudformation/WazeProcessorStack.yml).
-6. You will be prompted for 3 variables:
-  * **EnvironmentName**: Enter name of the environment (Dev, Test, Prod, etc). This allows you to deploy and test updates easily.
-  * **S3ArtifactsBucket**: Enter the S3 bucket name from step 2 where you put your Lambda functions from step 4.
-  * **WazeDataHttpUrl**: Full URL to the Waze CCP data feed provided to you by Waze.
 
-This creates a Cloud Formation (CF) stack which has all the infrastructure needed to ping your custom Waze CCP data feed every 2 minutes and save the JSON to a new bucket.  
+**Create IAM User**
+1. Go to IAM, Add User, name ‘waze_terraform_user’. Chose programmatic access, attach policy directly: Administrator Access. Create User.
+2. Copy access key and secret access key
 
-Here's what was created, as seen in the Cloud Formation Designer:
+*Note: when finished deploying the code, remove this admin user for security. We could build a policy for this in the future.*
 
-![Waze Current Architecture](docs/WazeCurrentArchitecture.png "Waze Current Architecture")
+**Create State Management Bucket**
 
-You can update the CF stack with new YAML as the code here gets updated, and it only affects new and changed items. You can also remove all the AWS infrastructure automatically (minus the S3 bucket you created manually) by deleting the CF stack. 
+1. Go to [S3](https://s3.console.aws.amazon.com/s3/home), create bucket ‘waze-terraform-state-management-CITYNAME’, default properties and permissions, create.
+2. Choose a region that has all services needed. Note your region for later.
+
+### Download Git Repo Code and Configure
+
+1. Download this repo to a folder on your computer.
+1. On your desktop, go to `/infrastructure/terraform/backend/config` and edit the file.  Add the name of your state management bucket "waze-terraform-state-management-CITYNAME", and region (eg. "us-east-1").
+1. Go to `/infrastructure/terraform/modules/globals/globals.tf` and update the following:
+```
+# region where resources will be created by default
+output "default_resource_region" { value = "us-east-1" }
+
+output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA FULL HTTP URL HERE" }
+output "rds_master_username" { value = "YOUR DESIRED DB USER NAME HERE" }
+output "rds_master_password" { value = "YOUR DESIRED DB ADMIN PASSWORD HERE" }
+output "lambda_db_password" { value = "YOUR DESIRED PASSWORD FOR THE LAMBDA USER HERE"}
+```
+
+### Setup Terraform for the First Time
+
+1. Download the [latest version](https://www.terraform.io/downloads.html) v0.11, unzip, and [set the path](https://www.terraform.io/intro/getting-started/install.html) (eg, sudo ln -s terraform terraform).
+1. Verify your version is correct by running `terraform --version`.
+
+### Running Terraform
+1. In your terminal go to your `/infrastructure/terraform/environment/env-dev` directory (use env-dev for a development/test deployment, or env-prod for production level deployment)
+    - The differences between dev and prod are... (?)
+1. Set session variables for Terraform with access keys from AWS IAM user:
+    - `export AWS_ACCESS_KEY_ID="YOUR IAM USER ACCESS KEY"`
+    - `export AWS_SECRET_ACCESS_KEY="YOUR IAM USER SECRET ACCESS KEY"`
+1. Run the following commands
+    - `terraform get`
+    - `terraform init -backend-config="../../backend/config"`
+    - `terraform plan`
+    - `terraform apply`
+1. Make a note of db_cluster_endpoint value that will be output when Terraform completes.
+
+### Running SQL schema creation script
+After the stack is up and running use you favorite PostGres connection client (eg, DBeaver, pgAdmin) and connect to the db_cluster_endpoint from above using your specified rds_master_username and rds_master_password.
+
+1. Open /code/sql/schema.sql
+2. Update the password for the lambda_role (near the top) to match what you provided in terraform
+3. Run script in your DB client
+
+*Note: this is a manual process for now to ensure DB updates are applied accurately for the moment.*
+
+### Using the optional SNS notifications
+
+Details coming soon. (?)
+
+### Clean Up
+
+Go to your AWS IAM area and delete the `waze_terraform_user` you created.
+
+## Finished Result
+
+This creates an infrastructure stack which has pings your custom Waze CCP data feed every 2 minutes and save the JSON to a new bucket, which then gets processed into the relational database.  There is error handling and also notification options for when things go right or wrong.  
+
+Here's what was created:
+
+![Waze Current Architecture](docs/Current%20Architecture.png "Waze Current Architecture")
+
+You can update the stack with new infrastructure as the code here gets updated, and it only affects new and changed items. You can also remove all the infrastructure automatically (minus the S3 bucket you created manually) by deleting the Terraform stack using `terraform destroy` after the `get` and `init` commands. 
+
+## Loading Historic JSON Data Files
+
+You can also dump any previously collected historic JSON files into your bucket and the processor will go through them and save/update the relevant data into your database.
+
+### Notes on processing many files at once
+
+The system will queue up and process every file that gets added to the incoming data bucket.  This makes it easy to process any old files you may have already collected, or reprocess files later if changes are made that would require it.  If you should decide to dump a mass of files in the bucket, you may want to consider temporarily disabling all of the foreign keys.  Doing so will _greatly_ increase throughput, which also means reduced cost to run.  Disabling the foreign keys is not without risk, though, so it is advisable to create a backup beforehand and understand what you might need to do to clean up should inconsistent data get loaded while the keys are off.  We are working on a script you can run to disable and re-enable your FKs. 
+
+## Costs
+
+This config stands up infrastructure that is mostly cheap/free (depending on usage), but the database itself is pretty powerful and will result in monthly charges in excess of $200 (as of this writing).  We are working on ways to reduce the costs and you can help out on this [issue](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues/32).
 
 ## Current Plans
 
-We are working on writing more of the Cloud Formation YAML to take the stored S3 JSON files and process them into an AWS relational database.
+We are working on writing API hooks, data visualizations and tools, and maps, which is all part of our project roadmap.
 
-See our [Architecture Diagram](docs/Metro%20Waze%20Proposed%20Architecture.pdf) and [Requirements Doc](docs/Required%20infrastructure.txt) in our [docs folder](docs) for our blueprint of how we are proceeding. 
+See our [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) area for our blueprint of how we are proceeding. 
 
-**We would like to collaborate with you!**  Please suggest updates, make a new branch and add to the CF YAML, collaborate on the Wiki, etc.  It would be great to work together to get the best solution and finish faster.   
+**We would like to collaborate with you!**  Please suggest updates, work on the [help wanted issues](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), collaborate on the Wiki, etc.  It would be great to work together to get the best solution, use cases, and finish faster.   
 
-We started with Cloud Formation directly, but if you would instead like to build out the code in [Terraform](http://www.terraform.io) please do so it can be deployed to any cloud provider. 
+We've build out the code in [Terraform](http://www.terraform.io) and supported AWS at first, but would like it to be deployed to any cloud provider.  See our [Issues](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues) area for how you can help with this.
 
 ## Background
 
@@ -56,3 +123,5 @@ If you'd like a little more background on Louisville and what our city has been 
 
 1. [Louisville Waze Internal Hackathon Recap](https://medium.com/louisville-metro-opi2/waze-louisvilles-first-internal-hackathon-647363a85392)
 2. [Harvard Civic Analytics Network Presentation - Slides](https://docs.google.com/presentation/d/1esPVvhuIRjD199rN8aimK_XcmCt0pJOkjEIyCMhGKks/)
+3. [Waze April 2018 Monthly Call - Slides](https://docs.google.com/presentation/d/1loAV4BDAUyXdrn44QoLmYiwZdLmL59C4jvJGlZ1a-AY/)
+4. [Open Government Coalition](https://www.govintheopen.com/)

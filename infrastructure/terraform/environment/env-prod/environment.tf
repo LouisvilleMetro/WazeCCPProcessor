@@ -3,7 +3,7 @@
 terraform {
     backend "s3" {
         # name of the state file, unique per environment; could instead tweak it and use workspaces
-        key = "env-dev-waze-data-processor.tfstate" 
+        key = "env-prod-waze-data-processor.tfstate" 
     }
 }
 
@@ -11,7 +11,7 @@ terraform {
 
 module "globals" {
     source = "../../modules/globals"
-    environment = "Development"
+    environment = "Production"
 }
 
 # load the environment module, passing variables when available from the globals output (see globals module readme for the 'why')
@@ -24,10 +24,11 @@ module "environment" {
     enable_data_processor_dlq_sns_topic = "true"
     enable_data_processed_sns_topic = "true"
 
-    # don't do this for production environments, but ok to skip it for dev 
-    skip_final_db_snapshot_on_destroy = "true"
-    # likewise for this one
-    empty_s3_buckets_before_destroy = "true"
+    # since this is production, we won't allow deleting the db unless a final snapshot has been taken
+    # also won't allow deleting the buckets if they still have files in them
+    # this means destroying the stack requires manual intervention outside of terraform, so no one accidentally loses production data
+    skip_final_db_snapshot_on_destroy = "false"
+    empty_s3_buckets_before_destroy = "false"
 
     default_resource_region = "${module.globals.default_resource_region}" # see globals.tf to change
     waze_data_url = "${module.globals.waze_data_url}" # see globals.tf to change

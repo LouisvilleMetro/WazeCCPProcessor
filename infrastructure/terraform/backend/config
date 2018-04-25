@@ -1,0 +1,5 @@
+# the name of the state management bucket
+bucket = "YOUR STATE MANAGEMENT BUCKET NAME HERE"
+
+# the region where the state management bucket resides
+region = "us-east-1" 
