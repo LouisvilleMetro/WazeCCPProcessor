@@ -35,25 +35,20 @@ We have an end-to-end data processor and database working that you can deploy.  
 1. Go to [S3](https://s3.console.aws.amazon.com/s3/home), create bucket ‘waze-terraform-state-management-CITYNAME’, default properties and permissions, create.
 2. Choose a region that has all services needed. Note your region for later.
 
-**Create Artifacts Bucket**
-
-Go to S3, create bucket ‘waze-terraform-artifacts-CITYNAME’, default properties and permissions, create.
-
 ### Download Git Repo Code and Configure
 
 1. Download this repo to a folder on your computer.
-1. Go to `/code/lambda-functions/` and place the 2 zip files there into your AWS artifacts bucket "waze-terraform-artifacts-CITYNAME", with default permissions.
 1. On your desktop, go to `/infrastructure/terraform/backend/config` and edit the file.  Add the name of your state management bucket "waze-terraform-state-management-CITYNAME", and region (eg. "us-east-1").
 1. Go to `/infrastructure/terraform/modules/globals/globals.tf` and update the following:
 ```
 # region where resources will be created by default
 output "default_resource_region" { value = "us-east-1" }
 
-# Bucket where artifacts, such as lambda code bundles, are stored
-output "s3_artifacts_bucket" { value = "waze-terraform-artifacts-CITYNAME" }
 output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA FULL HTTP URL HERE" }
 output "rds_master_username" { value = "YOUR DESIRED DB USER NAME HERE" }
-output "rds_master_password" { value = "YOUR DESIRED DB PASSWORD HERE" }
+output "rds_master_password" { value = "YOUR DESIRED DB ADMIN PASSWORD HERE" }
+output "lambda_db_username" { value = "YOUR DESIRED DB ADMIN USER HERE"}
+output "lambda_db_password" { value = "YOUR DESIRED DB PASSWORD HERE"}
 ```
 
 ### Setup Terraform for the First Time
