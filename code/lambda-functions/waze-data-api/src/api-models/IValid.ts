@@ -1,0 +1,3 @@
+interface IValid {
+    isValid(): boolean;
+}

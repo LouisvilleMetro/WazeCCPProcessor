@@ -1,6 +1,6 @@
 import connectionPool = require('./connectionPool') 
 import util = require('util')
-import * as entities from '../entities'
+import * as entities from '../../../shared-src/entities'
 
 // update the date_updated field on the given record
 export async function updateDataFileUpdateDateByIdCommand(id: number) { 
