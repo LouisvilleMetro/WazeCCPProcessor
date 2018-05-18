@@ -14,6 +14,12 @@ Then you can store, analyze, query, extract live and historic data for your city
 
 See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) area for how you can help, and the [Wiki](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki) for all the details.
 
+## Premier Project Sponsors
+
+Organizations that are helping to fund, manage, promote, and support the project.
+
+![Sponsors](https://i.imgur.com/lKyadYX.jpg)
+
 ## Deploy the Solution to Your Cloud
 
 We have an end-to-end data processor and database working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
