@@ -17,6 +17,7 @@ module.exports = {
     resolve: {
       extensions: [ '.tsx', '.ts', '.js' ]
     },
+    externals: ['pg-native'],
     output: {
       libraryTarget: 'commonjs',
       filename: 'waze-data-api.js',

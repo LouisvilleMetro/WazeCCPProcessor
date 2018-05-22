@@ -14,7 +14,7 @@
     "@types/node": "^9.6.4",
     "@types/object-hash": "^1.2.0",
     "@types/pg": "^7.4.5",
-    "aws-sdk": "^2.224.1",
+    "aws-sdk": "^2.244.1",
     "ts-loader": "^4.2.0",
     "typescript": "^2.8.1",
     "webpack": "^4.5.0",

@@ -1,4 +1,4 @@
-import connectionPool = require('./connectionPool') 
+import connectionPool = require('../../../shared-src/connectionPool') 
 import util = require('util')
 import * as entities from '../../../shared-src/entities'
 
