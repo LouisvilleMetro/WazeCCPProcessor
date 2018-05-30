@@ -23,5 +23,6 @@
   "dependencies": {
     "@types/pg": "^7.4.9",
     "pg": "^7.4.3"
+    
   }
 }
