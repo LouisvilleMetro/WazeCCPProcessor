@@ -1,6 +1,6 @@
 import AWS = require('aws-sdk');
 import { Handler, Context, Callback } from 'aws-lambda';
-import consolePatch from '../../shared-src/consolePatch'
+import consolePatch from '../../shared-lib/src/consolePatch'
 
 
 const getJamsList: Handler = async (event: any, context: Context, callback: Callback) => {
@@ -93,3 +93,5 @@ const getIrregularityDetail: Handler = async (event: any, context: Context, call
     }
 }
 
+// export all the methods
+export { getAlertsList, getAlertDetail, getIrregularitiesList, getIrregularityDetail, getJamsList, getJamDetail }

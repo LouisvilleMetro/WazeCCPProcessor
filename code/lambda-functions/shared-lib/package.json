@@ -1,0 +1,28 @@
+{
+  "name": "shared-lib",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./built/shared-lib.js",
+  "files": [
+    "./built/**/*"
+  ],
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "tsc",
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^10.3.1",
+    "@types/pg": "^7.4.9",
+    "ts-loader": "^4.3.1",
+    "typescript": "^2.9.1",
+    "webpack": "^4.11.1",
+    "webpack-cli": "^3.0.2"
+  },
+  "dependencies": {
+    "pg": "^7.4.3"
+  }
+}

@@ -1,6 +1,6 @@
-import connectionPool = require('../../../shared-src/connectionPool') 
+import connectionPool = require('../../../shared-lib/src/connectionPool') 
 import util = require('util')
-import * as entities from '../../../shared-src/entities'
+import * as entities from '../../../shared-lib/src/entities'
 
 // get a date_file record, if one exists, with the passed hash
 export async function getDataFilesByHashQuery(jsonHash: string): Promise<entities.DataFile> { 

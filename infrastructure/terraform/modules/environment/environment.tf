@@ -372,7 +372,7 @@ resource "aws_iam_role_policy_attachment" "data_retrieval_lambda_basic_logging_r
 resource "aws_lambda_function" "waze_data_retrieval_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-download.zip"
     function_name = "${var.object_name_prefix}-waze-data-retrieval"
-    runtime = "nodejs6.10"
+    runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-download.downloadData"
     timeout = 300
@@ -453,7 +453,7 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
 resource "aws_lambda_function" "waze_data_jams_processing_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
     function_name = "${var.object_name_prefix}-waze-data-jams-processing"
-    runtime = "nodejs6.10"
+    runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-process.processDataJams"
     timeout = 300
@@ -478,7 +478,7 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
 resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
     function_name = "${var.object_name_prefix}-waze-data-irregularities-processing"
-    runtime = "nodejs6.10"
+    runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-process.processDataIrregularities"
     timeout = 300

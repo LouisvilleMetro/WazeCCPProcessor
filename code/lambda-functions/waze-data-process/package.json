@@ -23,7 +23,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "webpack --config webpack.config.js",
+    "postinstall": "cd ../shared-lib && npm install && cd ../waze-data-process && npm run build",
     "build": "webpack --config webpack.config.js"
   },
   "author": "",

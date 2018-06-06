@@ -1,6 +1,6 @@
-import connectionPool = require('../../../shared-src/connectionPool') 
+import connectionPool = require('../../../shared-lib/src/connectionPool') 
 import util = require('util')
-import * as entities from '../../../shared-src/entities'
+import * as entities from '../../../shared-lib/src/entities'
 import getJamsListQueryBuilder = require("./getJamsListQueryBuilder");
 import fs = require('fs');
 

@@ -5,7 +5,7 @@
   "main": "built/waze-data-api.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "webpack --config webpack.config.js",
+    "postinstall": "cd ../shared-lib && npm install && cd ../waze-data-api && npm run build",
     "build": "webpack --config webpack.config.js"
   },
   "author": "",
@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.3",
     "@types/node": "^10.0.6",
+    "@types/pg": "^7.4.9",
     "aws-sdk": "^2.236.1",
     "ts-loader": "^4.3.0",
     "typescript": "^2.8.3",
@@ -21,7 +22,6 @@
     "zip-webpack-plugin": "^3.0.0"
   },
   "dependencies": {
-    "@types/pg": "^7.4.9",
     "pg": "^7.4.3"
     
   }
