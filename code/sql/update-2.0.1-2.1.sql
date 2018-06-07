@@ -15,3 +15,14 @@ WHERE a.type = t.type
  and a.type_id is null; 
 
 -- need to add type_id data upon ingestion...
+
+-- Create read-only user
+
+-- ADD A PASSWORD!
+CREATE USER waze_readonly WITH ENCRYPTED PASSWORD '';
+
+GRANT CONNECT ON DATABASE waze_data TO waze_readonly;
+GRANT USAGE ON SCHEMA waze TO waze_readonly;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA waze TO waze_readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA waze to waze_readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT SELECT ON TABLES TO waze_readonly;
