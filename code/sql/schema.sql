@@ -50,6 +50,9 @@ CREATE TABLE waze.jams
   "blocking_alert_id"               TEXT,
   "line"                            JSONB,
   "type"                            TEXT,
+  "ns_direction"                    TEXT, -- N or S, eg. north or south, direction jam start to jam line heads
+  "ew_direction"                    TEXT, -- E or W, eg. east or west
+  "dayofweek"                       INTEGER, -- 1-7, eg Monday - Sunday
   "turn_line"                       JSONB,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
@@ -72,6 +75,8 @@ CREATE TABLE waze.alerts
   "confidence"                      INTEGER,
   "type"                            TEXT,
   "subtype"                         TEXT,
+  "type_id"                         INTEGER, -- links to alert_types table
+  "dayofweek"                       INTEGER, -- 1-7, eg Monday - Sunday
   "report_by_municipality_user"     BOOLEAN,
   "thumbs_up"                       INTEGER,
   "jam_uuid"                        TEXT,
