@@ -631,8 +631,6 @@ resource "aws_rds_cluster" "waze_database_cluster" {
   database_name                = "waze_data"
   master_username              = "${var.rds_master_username}"
   master_password              = "${var.rds_master_password}"
-  readonly_username            = "${var.rds_readonly_username}"
-  readonly_password            = "${var.rds_readonly_password}"
   backup_retention_period      = 3                                                    # short because all the data could be regenerated easily
   preferred_backup_window      = "02:00-04:00"
   preferred_maintenance_window = "wed:05:00-wed:06:00"
