@@ -60,3 +60,50 @@ resource "aws_lambda_permission" "gateway_lambda_permission" {
   # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
   source_arn = "arn:aws:execute-api:${var.api_gateway_region}:${data.aws_caller_identity.current.account_id}:${var.api_gateway_rest_api_id}/*/${aws_api_gateway_method.gateway_method.http_method}${aws_api_gateway_resource.gateway_resource.path}"
 }
+
+# for CORS support, we also need to setup OPTIONS specifically
+resource "aws_api_gateway_method" "options_method" {
+  rest_api_id = "${var.api_gateway_rest_api_id}"
+  resource_id = "${aws_api_gateway_resource.gateway_resource.id}"
+  http_method = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_integration" {
+  rest_api_id = "${var.api_gateway_rest_api_id}"
+  resource_id = "${aws_api_gateway_resource.gateway_resource.id}"
+  http_method = "${aws_api_gateway_method.options_method.http_method}"
+  type = "MOCK"
+  request_templates = { 
+    "application/json" = <<PARAMS
+{ "statusCode": 200 }
+PARAMS
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_integration_response" {
+  depends_on = ["aws_api_gateway_integration.options_integration"]
+  rest_api_id = "${var.api_gateway_rest_api_id}"
+  resource_id = "${aws_api_gateway_resource.gateway_resource.id}"
+  http_method = "${aws_api_gateway_method.options_method.http_method}"
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS,GET,PUT,PATCH,DELETE'",
+    "method.response.header.Access-Control-Allow-Origin" = "'*'"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_method_200_response" {
+  depends_on = ["aws_api_gateway_method.options_method"]
+  rest_api_id = "${var.api_gateway_rest_api_id}"
+  resource_id = "${aws_api_gateway_resource.gateway_resource.id}"
+  http_method = "OPTIONS"
+  status_code = "200"
+  response_models = { "application/json" = "Empty" }
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}

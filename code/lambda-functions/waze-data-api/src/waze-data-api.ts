@@ -3,6 +3,7 @@ import { Handler, Context, Callback } from 'aws-lambda';
 import consolePatch from '../../shared-lib/src/consolePatch'
 import { getJamSnapshotRequestModel } from './api-models/getJamSnapshotRequestModel';
 import { customHttpError } from './utils/customError';
+import { buildCorsResponse } from './utils/corsResponse';
 
 // wrapper function for all the handlers that centralizes error handling and logging
 function wrappedHandler(fn: Handler): Handler {
@@ -22,10 +23,8 @@ function wrappedHandler(fn: Handler): Handler {
             //if the error is of our custom type, we'll convert it to a legit "successful" response
             if(err instanceof customHttpError){
                 //build a legit http response to send back
-                let errResponse = {
-                    statusCode: err.httpStatus,
-                    body: JSON.stringify(err)
-                };
+                let errResponse = buildCorsResponse(err.httpStatus, JSON.stringify(err));
+
                 //call the callback "success" with our error response
                 //trust me, works right with api gateway
                 callback(null, errResponse);
@@ -33,10 +32,7 @@ function wrappedHandler(fn: Handler): Handler {
             else{
                 //in this case, it was an otherwise unexpected exception
                 //we'll simply respond with a 500
-                let errResponse = {
-                    statusCode: 500,
-                    body: JSON.stringify({message: "An unexpected error has occurred."})
-                };
+                let errResponse = buildCorsResponse(500, JSON.stringify({message: "An unexpected error has occurred."}));
                 callback(null, errResponse);
             }
         }
@@ -183,10 +179,7 @@ const getJamsSnapshot: Handler = wrappedHandler(async (event: any, context: Cont
             ]
         };
 
-        let response = {
-            statusCode: 200,
-            body: JSON.stringify(dummyData)
-        };
+        let response = buildCorsResponse(200, JSON.stringify(dummyData));
         callback(null, response);
 
 });
