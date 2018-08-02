@@ -1,3 +1,5 @@
+import { StandardListRequest } from "./StandardListRequest";
+
 export class getJamListRequestModel extends StandardListRequest<object> {
     
     startDate: string;
@@ -18,7 +20,7 @@ export class getJamListRequestModel extends StandardListRequest<object> {
         throw new Error("Method not implemented.");
     }
 
-    isValid(): boolean {
+    validate(): void {
         //check that all of the required fields exist
         throw new Error("Method not implemented.");
     }

@@ -502,10 +502,37 @@ resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
 # setup jams list api lambda
 resource "aws_lambda_function" "jams_list_api_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-api.zip"
+    source_code_hash = "${base64sha256(file("${var.lambda_artifacts_path}/waze-data-api.zip"))}"
     function_name = "${var.object_name_prefix}-jams-list-api"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
     handler = "waze-data-api.getJamsList"
+    timeout = 30 # API Gateway will stop listening after 30 seconds, so don't let the lambda keep running beyond that
+    memory_size = 512 # more memory also equals more CPU and (more importantly here) network
+    environment {
+        variables = {
+            PGHOST = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+            PGUSER = "${var.lambda_db_username}"
+            PGPASSWORD = "${var.lambda_db_password}"
+            PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
+            PGPORT = "${var.rds_port}"
+            POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
+        }
+    }
+    tags {
+        Environment = "${var.environment}"
+        Scripted = "true"
+    }
+}
+
+# setup jams snapshot api lambda
+resource "aws_lambda_function" "jams_snapshot_api_function"{
+    filename = "${var.lambda_artifacts_path}/waze-data-api.zip"
+    source_code_hash = "${base64sha256(file("${var.lambda_artifacts_path}/waze-data-api.zip"))}"
+    function_name = "${var.object_name_prefix}-jams-snapshot-api"
+    runtime = "nodejs8.10"
+    role = "${aws_iam_role.data_retrieval_execution_role.arn}"
+    handler = "waze-data-api.getJamsSnapshot"
     timeout = 30 # API Gateway will stop listening after 30 seconds, so don't let the lambda keep running beyond that
     memory_size = 512 # more memory also equals more CPU and (more importantly here) network
     environment {
@@ -685,12 +712,23 @@ module "jams_list_endpoint" {
     lambda_function_arn = "${aws_lambda_function.jams_list_api_function.arn}"
 }
 
+module "jams_snapshot_endpoint" {
+    source = "../api_resource"
+    api_gateway_rest_api_id = "${aws_api_gateway_rest_api.waze_api.id}"
+    api_gateway_parent_id = "${aws_api_gateway_rest_api.waze_api.root_resource_id}"
+    resource_path_part = "jams-snapshot"
+    api_http_method = "GET"
+    api_gateway_region = "${var.default_resource_region}"
+    lambda_function_arn = "${aws_lambda_function.jams_snapshot_api_function.arn}"
+}
+
 
 # setup a deployment, which we'll only have one because we replicate the whole stack per environment
 resource "aws_api_gateway_deployment" "waze_api_gateway_deployment" {
   # need to 'depends_on' all of the endpoints so that they finish creation first, otherwise everything explodes
   depends_on  = [
-    "module.jams_list_endpoint"
+    "module.jams_list_endpoint",
+    "module.jams_snapshot_endpoint"
   ]
   rest_api_id = "${aws_api_gateway_rest_api.waze_api.id}"
   stage_name  = "waze"
