@@ -31,6 +31,10 @@ export class getJamSnapshotRequestModel extends StandardListRequest<object> {
     // setup private vars that we'll set as we deserialize
     private snapshotDateTime: Date;
 
+    getSnapshotDateTime(){
+        return this.snapshotDateTime;
+    }
+    
     deserialize(input: APIGatewayProxyEvent) {
 
         //make sure we got some parameters
