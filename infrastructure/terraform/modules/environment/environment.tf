@@ -675,6 +675,7 @@ resource "aws_rds_cluster" "waze_database_cluster" {
 
 # create the actual DB instance
 resource "aws_rds_cluster_instance" "waze_database_instances" {
+  depends_on = ["aws_default_route_table.waze_vpc_routes"]
   count              = 1 # keeping this here, set to 1, in case someone wants to easily increase it (expensive, though)
   identifier         = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
   cluster_identifier = "${aws_rds_cluster.waze_database_cluster.id}"
