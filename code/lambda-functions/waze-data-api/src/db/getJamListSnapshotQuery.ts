@@ -24,16 +24,60 @@ export class GetJamsListSnapshotQueryArgs {
     fieldNames: string[];
 }
 
-export async function getJamsListSnapshot(queryArgs: GetJamsListSnapshotQueryArgs) : Promise<entities.Jam[]>
+export class JamsSnapshotTimeframe {
+    startTime: number;
+    endTime: number;
+}
+
+export class GetJamsListSnapshotResult 
+{
+    jams : entities.Jam[];
+    timeframeReturned: JamsSnapshotTimeframe;
+    nextTimeframe: JamsSnapshotTimeframe;
+    previousTimeframe: JamsSnapshotTimeframe;
+}
+
+export async function getJamsListSnapshot(queryArgs: GetJamsListSnapshotQueryArgs) : Promise<GetJamsListSnapshotResult>
 {
     var query = buildSqlAndParameterList(queryArgs);
-    let result = await connectionPool.getPool().query(query.sql, query.parameterList);
+    let queryResponse = await connectionPool.getPool().query(query.sql, query.parameterList);
 
-    if(result.rowCount === 0){
+    if(queryResponse.rowCount === 0){
         //nothing found, return null
         return null;
     }
     
+    let result = new GetJamsListSnapshotResult();
+    for(let row of queryResponse)
+    {
+        if(!result.timeframeReturned)        
+        {
+            result.timeframeReturned = {
+                startTime : <number>row.start_time_millis,
+                endTime : <number>row.end_time_millis
+            };
+        }
+        if(!result.nextTimeframe)
+        {
+            result.nextTimeframe = {
+                startTime : <number>row.next_start_time_millis,
+                endTime : <number>row.next_end_time_millis
+            };
+        }
+        if(!result.previousTimeframe)
+        {
+            result.previousTimeframe = {
+                startTime : <number>row.prev_start_time_millis,
+                endTime : <number>row.prev_end_time_millis
+            };
+        }
+        var jam = new entities.Jam();
+        jam.id = row.id || null;
+        jam.uuid = row.uuid || null;
+        jam.pub_utc_date = row.pub_utc_date || null;
+        jam.line
+    }
+
     throw new Error("This method is not implemented.");
 }
 
@@ -72,7 +116,7 @@ function buildSqlAndParameterList(args: GetJamsListSnapshotQueryArgs): { sql:str
     " WHERE"+
         " $1 BETWEEN files.start_time_millis AND files.end_time_millis"+
         " AND y BETWEEN $2 AND $3"+
-        " AND x BETWEEN $4 AND $5;";
+        " AND x BETWEEN $4 AND $5";
     
 
     let parameters : any[] = [
@@ -185,7 +229,6 @@ let fieldNamesDict : { [id: string] : string} = {
     "street" : "j.street",
     "turn_type" : "j.turn_type",
     "uuid" : "j.uuid",
-    "wazeid" : "j.wazeid"
 }
 
 function getEscapedFieldNames(queryArgs: GetJamsListSnapshotQueryArgs) : string[]
