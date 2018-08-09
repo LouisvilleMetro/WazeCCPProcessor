@@ -5,6 +5,7 @@ import getJamsListQueryBuilder = require("./getJamsListQueryBuilder");
 import fs = require('fs');
 import { getJamSnapshotRequestModel } from '../api-models/getJamSnapshotRequestModel';
 import * as getJamsSnapshotQueryBuilder from "./getJamListSnapshotQueryBuilder";
+import { GetJamsListSnapshotResult } from "../api-models/getJamSnapshotResponse";
 
 export class GetJamsListQueryArgs {
     startDateTime: Date;
@@ -43,7 +44,7 @@ export async function GetJamsList(args: GetJamsListQueryArgs): Promise<entities.
     
 }
 
-export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<getJamsSnapshotQueryBuilder.GetJamsListSnapshotResult>
+export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<GetJamsListSnapshotResult>
 {
     var query = getJamsSnapshotQueryBuilder.buildSqlAndParameterList(queryArgs);
     let queryResponse = await connectionPool.getPool().query(query.sql, query.parameterList);
