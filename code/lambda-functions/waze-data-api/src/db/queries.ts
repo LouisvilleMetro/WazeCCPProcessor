@@ -3,6 +3,8 @@ import util = require('util')
 import * as entities from '../../../shared-lib/src/entities'
 import getJamsListQueryBuilder = require("./getJamsListQueryBuilder");
 import fs = require('fs');
+import { getJamSnapshotRequestModel } from '../api-models/getJamSnapshotRequestModel';
+import * as getJamsSnapshotQueryBuilder from "./getJamListSnapshotQueryBuilder";
 
 export class GetJamsListQueryArgs {
     startDateTime: Date;
@@ -40,5 +42,19 @@ export async function GetJamsList(args: GetJamsListQueryArgs): Promise<entities.
     throw new Error("This method is not implemented.");
     
 }
+
+export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<getJamsSnapshotQueryBuilder.GetJamsListSnapshotResult>
+{
+    var query = getJamsSnapshotQueryBuilder.buildSqlAndParameterList(queryArgs);
+    let queryResponse = await connectionPool.getPool().query(query.sql, query.parameterList);
+
+    if(queryResponse.rowCount === 0){
+        //nothing found, return null
+        return null;
+    }
+    
+    return getJamsSnapshotQueryBuilder.mapSnapshotResultFromQueryQueryResult(queryResponse);
+}
+
 
 

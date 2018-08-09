@@ -2,11 +2,7 @@ import connectionPool = require('../../../shared-lib/src/connectionPool')
 import * as entities from '../../../shared-lib/src/entities'
 import moment = require("moment");
 import { getJamSnapshotRequestModel } from "../api-models/getJamSnapshotRequestModel";
-
-export class JamsSnapshotTimeframe {
-    startTime: number;
-    endTime: number;
-}
+import { QueryResult } from 'pg';
 
 export class JamSnapshot extends entities.JamBase<entities.Point> {
     
@@ -15,21 +11,13 @@ export class JamSnapshot extends entities.JamBase<entities.Point> {
 export class GetJamsListSnapshotResult 
 {
     jams : JamSnapshot[];
-    timeframeReturned: JamsSnapshotTimeframe;
-    nextTimeframe: JamsSnapshotTimeframe;
-    previousTimeframe: JamsSnapshotTimeframe;
+    timeframeReturned: entities.Timeframe;
+    nextTimeframe: entities.Timeframe;
+    previousTimeframe: entities.Timeframe;
 }
 
-export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<GetJamsListSnapshotResult>
+export function mapSnapshotResultFromQueryQueryResult(queryResponse : QueryResult) : GetJamsListSnapshotResult
 {
-    var query = buildSqlAndParameterList(queryArgs);
-    let queryResponse = await connectionPool.getPool().query(query.sql, query.parameterList);
-
-    if(queryResponse.rowCount === 0){
-        //nothing found, return null
-        return null;
-    }
-    
     let result = new GetJamsListSnapshotResult();
     result.jams = [];
 
@@ -38,22 +26,22 @@ export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestMo
         if(!result.timeframeReturned)        
         {
             result.timeframeReturned = {
-                startTime : <number>row.start_time_millis,
-                endTime : <number>row.end_time_millis
+                startTimeMillis : <number>row.start_time_millis,
+                endTimeMillis : <number>row.end_time_millis
             };
         }
         if(!result.nextTimeframe)
         {
             result.nextTimeframe = {
-                startTime : <number>row.next_start_time_millis,
-                endTime : <number>row.next_end_time_millis
+                startTimeMillis : <number>row.next_start_time_millis,
+                endTimeMillis : <number>row.next_end_time_millis
             };
         }
         if(!result.previousTimeframe)
         {
             result.previousTimeframe = {
-                startTime : <number>row.prev_start_time_millis,
-                endTime : <number>row.prev_end_time_millis
+                startTimeMillis : <number>row.prev_start_time_millis,
+                endTimeMillis : <number>row.prev_end_time_millis
             };
         }
         result.jams.push(mapJamFromQueryRow(row));
@@ -62,7 +50,8 @@ export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestMo
     return result;
 }
 
-function mapJamFromQueryRow(row: any) : JamSnapshot {
+
+export function mapJamFromQueryRow(row: any) : JamSnapshot {
     let jam: JamSnapshot = {
         id : row.id || null,
         uuid : row.uuid || null,
@@ -93,7 +82,7 @@ function mapJamFromQueryRow(row: any) : JamSnapshot {
     return jam;
 }
 
-function buildSqlAndParameterList(args: getJamSnapshotRequestModel): { sql:string, parameterList: any[] } 
+export function buildSqlAndParameterList(args: getJamSnapshotRequestModel): { sql:string, parameterList: any[] } 
 {
     let sql = "SELECT ";
 
@@ -242,7 +231,7 @@ let fieldNamesDict : { [id: string] : string} = {
     "uuid" : "j.uuid",
 }
 
-function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : string[]
+export function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : string[]
 {
     let escapedFields: string[] = [];
     
@@ -260,7 +249,7 @@ function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : string[]
     return escapedFields.length == 0 ? getDefaultFieldList() : escapedFields;
 }
 
-function getDefaultFieldList() : string[] 
+export function getDefaultFieldList() : string[] 
 {
     let fieldNames: string[] = [];
 

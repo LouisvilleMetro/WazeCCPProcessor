@@ -67,6 +67,11 @@ export class Point  {
     y: number;
 }
 
+export class Timeframe {
+    startTimeMillis: number;
+    endTimeMillis: number;
+}
+
 export class Irregularity {
     id: string;
     uuid: string;
