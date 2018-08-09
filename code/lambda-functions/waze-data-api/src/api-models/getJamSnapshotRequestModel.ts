@@ -17,16 +17,16 @@ export class getJamSnapshotRequestModel extends StandardListRequest<object> {
     maxLon: number;
 
     //optional
-    levels: number[];
-    roadTypes: number[];
-    streetName: string;
-    delayMin: number;
-    delayMax: number;
-    speedMin: number;
-    speedMax: number;
-    lengthMin: number;
-    lengthMax: number;
-    includeCoordinates: boolean;
+    levels?: number[];
+    roadTypes?: number[];
+    streetName?: string;
+    delayMin?: number;
+    delayMax?: number;
+    speedMin?: number;
+    speedMax?: number;
+    lengthMin?: number;
+    lengthMax?: number;
+    includeCoordinates?: boolean;
 
     // setup private vars that we'll set as we deserialize
     private snapshotDateTime: Date;

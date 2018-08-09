@@ -1,43 +1,26 @@
 import connectionPool = require('../../../shared-lib/src/connectionPool') 
 import * as entities from '../../../shared-lib/src/entities'
-
-export class GetJamsListSnapshotQueryArgs {
-    startDateTime: Date;
-    endDateTime: Date;
-    minLat: number;
-    maxLat: number;
-    minLon: number;
-    maxLon: number;
-    levels: number[];
-    roadTypes: number[];
-    street: string;
-    delayMin: number;
-    delayMax: number;
-    speedMin: number;
-    speedMax: number;
-    lengthMin: number;
-    lengthMax: number;
-    num: number;
-    offset: number;
-    countOnly: boolean;
-    
-    fieldNames: string[];
-}
+import moment = require("moment");
+import { getJamSnapshotRequestModel } from "../api-models/getJamSnapshotRequestModel";
 
 export class JamsSnapshotTimeframe {
     startTime: number;
     endTime: number;
 }
 
+export class JamSnapshot extends entities.JamBase<entities.Point> {
+    
+}
+
 export class GetJamsListSnapshotResult 
 {
-    jams : entities.Jam[];
+    jams : JamSnapshot[];
     timeframeReturned: JamsSnapshotTimeframe;
     nextTimeframe: JamsSnapshotTimeframe;
     previousTimeframe: JamsSnapshotTimeframe;
 }
 
-export async function getJamsListSnapshot(queryArgs: GetJamsListSnapshotQueryArgs) : Promise<GetJamsListSnapshotResult>
+export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<GetJamsListSnapshotResult>
 {
     var query = buildSqlAndParameterList(queryArgs);
     let queryResponse = await connectionPool.getPool().query(query.sql, query.parameterList);
@@ -48,7 +31,9 @@ export async function getJamsListSnapshot(queryArgs: GetJamsListSnapshotQueryArg
     }
     
     let result = new GetJamsListSnapshotResult();
-    for(let row of queryResponse)
+    result.jams = [];
+
+    for(let row of queryResponse.rows)
     {
         if(!result.timeframeReturned)        
         {
@@ -71,17 +56,44 @@ export async function getJamsListSnapshot(queryArgs: GetJamsListSnapshotQueryArg
                 endTime : <number>row.prev_end_time_millis
             };
         }
-        var jam = new entities.Jam();
-        jam.id = row.id || null;
-        jam.uuid = row.uuid || null;
-        jam.pub_utc_date = row.pub_utc_date || null;
-        jam.line
+        result.jams.push(mapJamFromQueryRow(row));
     }
 
-    throw new Error("This method is not implemented.");
+    return result;
 }
 
-function buildSqlAndParameterList(args: GetJamsListSnapshotQueryArgs): { sql:string, parameterList: any[] } 
+function mapJamFromQueryRow(row: any) : JamSnapshot {
+    let jam: JamSnapshot = {
+        id : row.id || null,
+        uuid : row.uuid || null,
+        pub_millis : row.pub_millis || null,
+        pub_utc_date : row.pub_utc_date || null,
+        start_node : row.start_node || null,
+        end_node : row.end_node || null,
+        road_type : row.road_type || null,
+        street : row.street || null,
+        city : row.city || null,
+        country : row.country || null,
+        delay : row.delay  || null,
+        speed : row.speed || null,
+        speed_kmh : row.speed_kmh || null,
+        length : row.length || null,
+        turn_type : row.turn_type  || null,
+        level : row.level || null,
+        blocking_alert_id : row.blocking_alert_id || null,
+        line: null,
+        type : row.type || null,
+        turn_line : row.turn_line || null,
+        datafile_id : row.datafile_id || null,
+    };
+    if(row.line)
+    {
+        jam.line = JSON.parse(row.line);
+    }
+    return jam;
+}
+
+function buildSqlAndParameterList(args: getJamSnapshotRequestModel): { sql:string, parameterList: any[] } 
 {
     let sql = "SELECT ";
 
@@ -120,8 +132,7 @@ function buildSqlAndParameterList(args: GetJamsListSnapshotQueryArgs): { sql:str
     
 
     let parameters : any[] = [
-        args.startDateTime, 
-        args.endDateTime,
+        moment(args.getSnapshotDateTime()).valueOf(), //make sure we have a millisecond timstamp 
         args.minLat,
         args.maxLat,
         args.minLon,
@@ -148,10 +159,10 @@ function buildSqlAndParameterList(args: GetJamsListSnapshotQueryArgs): { sql:str
         parameters = parameters.concat(args.roadTypes);
     }
 
-    if(args.street)
+    if(args.streetName)
     {
         //this has to be a like. case-sensitivity depends on collation.
-        parameters.push("%" + args.street + "%");
+        parameters.push("%" + args.streetName + "%");
         sql += " AND jams.street LIKE $" + parameters.length;
     }
 
@@ -231,11 +242,11 @@ let fieldNamesDict : { [id: string] : string} = {
     "uuid" : "j.uuid",
 }
 
-function getEscapedFieldNames(queryArgs: GetJamsListSnapshotQueryArgs) : string[]
+function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : string[]
 {
     let escapedFields: string[] = [];
     
-    for(let field of queryArgs.fieldNames)
+    for(let field of queryArgs.fields)
     {
         field = field.toLowerCase();
         //if it's in our list of allowed field names and we don't 

@@ -4,6 +4,7 @@ import consolePatch from '../../shared-lib/src/consolePatch'
 import { getJamSnapshotRequestModel } from './api-models/getJamSnapshotRequestModel';
 import { customHttpError } from './utils/customError';
 import { buildCorsResponse } from './utils/corsResponse';
+import { getJamListSnapshotQuery } from "./db/getJamListSnapshotQuery";
 
 // wrapper function for all the handlers that centralizes error handling and logging
 function wrappedHandler(fn: Handler): Handler {
@@ -65,6 +66,7 @@ const getJamsSnapshot: Handler = wrappedHandler(async (event: any, context: Cont
         request.validate();
 
         //we deserialized and validated, so now safe to got gather the data
+        
         //HACK: for now just returning dummy data
         
         let dummyData: any = {
