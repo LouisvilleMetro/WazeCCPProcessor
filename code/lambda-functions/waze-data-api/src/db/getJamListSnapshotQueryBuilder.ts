@@ -210,10 +210,10 @@ let fieldNamesDict : { [id: string] : string} = {
     "delay" : "j.delay",
     "end_node" : "j.end_node",
     "id" : "j.id",
-    "latitude" : "j.latitude",
+    "latitude" : "x as latitude",
     "length" : "j.length",
     "level" : "j.level",
-    "longitude" : "j.longitude",
+    "longitude" : "y as longitude",
     "pub_utc_date" : "j.pub_utc_date",
     "road_type" : "j.road_type",
     "speed" : "j.speed",
@@ -235,7 +235,7 @@ export function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : st
         //already have it in our list of escaped field names, then add it.
         if(fieldNamesDict.hasOwnProperty(field) && escapedFields.indexOf(field) == -1)
         {
-            escapedFields.push(field);
+            escapedFields.push(fieldNamesDict[field]);
         }
     }
 
