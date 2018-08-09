@@ -196,6 +196,9 @@ export function buildSqlAndParameterList(args: getJamSnapshotRequestModel): { sq
         sql += " OFFSET " + parseInt(args.num.toString());
     }
 
+    console.debug("getJamListSnapshot Sql: %s", sql);
+    console.debug("getJamListSnapshot Parameters: %j", parameters);
+
     return {
         sql : sql,
         parameterList : parameters
