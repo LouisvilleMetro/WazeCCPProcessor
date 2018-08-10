@@ -106,12 +106,12 @@ export function buildSqlAndParameterList(args: getJamSnapshotRequestModel): { sq
     
     " WHERE"+
         " $1 BETWEEN files.start_time_millis AND files.end_time_millis"+
-        " AND y BETWEEN $2 AND $3"+
-        " AND x BETWEEN $4 AND $5";
+        " AND x BETWEEN $2 AND $3"+
+        " AND y BETWEEN $4 AND $5";
     
 
     let parameters : any[] = [
-        moment(args.getSnapshotDateTime()).valueOf(), //make sure we have a millisecond timstamp 
+        moment(args.getSnapshotDateTime()).utc().valueOf(), //make sure we have a millisecond timstamp 
         args.minLat,
         args.maxLat,
         args.minLon,
