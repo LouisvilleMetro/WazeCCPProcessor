@@ -1,13 +1,8 @@
 import * as entities from '../../../shared-lib/src/entities'
 
-export class JamSnapshot extends entities.JamBase<Array<entities.Point>> {
-    startLongitude: number;
-    startLatitude: number;
-}
-
-export class GetJamsListSnapshotResult 
+export class getJamSnapshotResponse 
 {
-    jams : JamSnapshot[];
+    jams : entities.JamWithLine[];
     timeframeReturned: entities.Timeframe;
     nextTimeframe: entities.Timeframe;
     previousTimeframe: entities.Timeframe;

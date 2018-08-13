@@ -3,12 +3,12 @@ import * as entities from '../../../shared-lib/src/entities'
 import moment = require("moment");
 import { getJamSnapshotRequestModel } from "../api-models/getJamSnapshotRequestModel";
 import { QueryResult } from 'pg';
-import { GetJamsListSnapshotResult, JamSnapshot } from "../api-models/getJamSnapshotResponse";
+import { getJamSnapshotResponse } from "../api-models/getJamSnapshotResponse";
 
 
-export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResult) : GetJamsListSnapshotResult
+export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResult) : getJamSnapshotResponse
 {
-    let result = new GetJamsListSnapshotResult();
+    let result = new getJamSnapshotResponse();
     result.jams = [];
 
     for(let row of dfResponse.rows)
@@ -41,51 +41,7 @@ export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResul
 }
 
 
-export function mapJamsFromJamQueryResult(queryResponse: QueryResult) : JamSnapshot[] {
-    let jams: JamSnapshot[] = [];
-    for(let row of queryResponse.rows)
-    {
-        let jam: JamSnapshot = {
-            id : row.id || null,
-            uuid : row.uuid || null,
-            pub_millis : row.pub_millis || null,
-            pub_utc_date : row.pub_utc_date || null,
-            start_node : row.start_node || null,
-            end_node : row.end_node || null,
-            road_type : row.road_type || null,
-            street : row.street || null,
-            city : row.city || null,
-            country : row.country || null,
-            delay : row.delay  || null,
-            speed : row.speed || null,
-            speed_kmh : row.speed_kmh || null,
-            length : row.length || null,
-            turn_type : row.turn_type  || null,
-            level : row.level || null,
-            blocking_alert_id : row.blocking_alert_id || null,
-            line: null,
-            type : row.type || null,
-            turn_line : row.turn_line || null,
-            datafile_id : row.datafile_id || null,
-            startLatitude: 0,
-            startLongitude: 0,
-        };
-        if(row.line)
-        {
-            //looks like pg's node client does this for us?
-            //jam.line = JSON.parse(row.line);
-            jam.line = row.line;
-            if(jam.line.length > 0)
-            {
-                jam.startLatitude = jam.line[0].y;
-                jam.startLongitude = jam.line[0].x;
-            }
-        }
-        jams.push(jam);
-    }
-    
-    return jams;
-}
+
 
 export function buildDataFileSqlAndParameterList(args: getJamSnapshotRequestModel) : { sql:string, parameterList: any[] }
 {

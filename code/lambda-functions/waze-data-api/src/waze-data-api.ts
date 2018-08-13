@@ -2,6 +2,7 @@ import AWS = require('aws-sdk');
 import { Handler, Context, Callback } from 'aws-lambda';
 import consolePatch from '../../shared-lib/src/consolePatch'
 import { getJamSnapshotRequestModel } from './api-models/getJamSnapshotRequestModel';
+import { getJamListRequestModel } from "./api-models/getJamListRequestModel";
 import { customHttpError } from './utils/customError';
 import { buildCorsResponse } from './utils/corsResponse';
 import * as queries from "./db/queries";
@@ -41,20 +42,20 @@ function wrappedHandler(fn: Handler): Handler {
 }
 
 
-const getJamsList: Handler = async (event: any, context: Context, callback: Callback) => {
-    try {
-        //patch the console so we can get more searchable logging
-        //would be nice to make this global, but couldn't quickly get that working
-        consolePatch();
+const getJamsList: Handler = wrappedHandler(async (event: any, context: Context, callback: Callback) => {
+        //deserialize the request
+        let request = new getJamListRequestModel(event);
 
-        throw new Error('Endpoint not yet implemented');        
-    }
-    catch (err) {
-        console.error(err);
-        callback(err);
-        return err;
-    }
-}
+        //see if it is valid
+        //this will throw a custom http error if not valid
+        request.validate();
+
+        //we deserialized and validated, so now safe to got gather the data
+        let data = await queries.getJamsList(request);
+        
+        let response = buildCorsResponse(200, JSON.stringify(data));
+        callback(null, response);
+});
 
 const getJamsSnapshot: Handler = wrappedHandler(async (event: any, context: Context, callback: Callback) => {
 

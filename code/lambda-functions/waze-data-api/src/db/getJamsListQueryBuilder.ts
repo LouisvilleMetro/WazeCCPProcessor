@@ -1,71 +1,82 @@
 import queries = require("./queries");
+import { getJamListRequestModel } from "../api-models/getJamListRequestModel";
+import { QueryResult } from 'pg';
+import * as entities from '../../../shared-lib/src/entities'
 
-export function GetEscapedFieldNames(queryObject : queries.GetJamsListQueryArgs) : string[]
+let fieldNamesDict : { [id: string] : string} = {
+    "city": "jams.city",
+    "delay" : "jams.delay",
+    "end_node" : "jams.end_node",
+    "id" : "jams.id",
+    "length" : "jams.length",
+    "level" : "jams.level",
+    "pub_utc_date" : "jams.pub_utc_date",
+    "road_type" : "jams.road_type",
+    "speed" : "jams.speed",
+    "speed_kmh" : "jams.speed_kmh",
+    "start_node" : "jams.start_node",
+    "street" : "jams.street",
+    "turn_type" : "jams.turn_type",
+    "uuid" : "jams.uuid",
+}
+
+export function GetEscapedFieldNames(queryObject : getJamListRequestModel) : string[]
 {
-    let fieldNamesDict : { [id: string] : string} = {
-        "city": "jams.city",
-        "delay" : "jams.delay",
-        "end_node" : "jams.end_node",
-        "id" : "jams.id",
-        "latitude" : "coordinates.latitude",
-        "length" : "jams.length",
-        "level" : "jams.level",
-        "longitude" : "coordinates.longitude",
-        "pub_utc_date" : "jams.pub_utc_date",
-        "road_type" : "jams.road_type",
-        "speed" : "jams.speed",
-        "speed_kmh" : "jams.speed_kmh",
-        "start_node" : "jams.start_node",
-        "street" : "jams.street",
-        "turn_type" : "jams.turn_type",
-        "uuid" : "jams.uuid",
-    }
-
     let escapedFields: string[] = [];
-    for(let field of queryObject.fieldNames)
+    for(let field of queryObject.fields || [])
     {
         field = field.toLowerCase();
         //if it's in our list of allowed field names and we don't 
         //already have it in our list of escaped field names, then add it.
         if(fieldNamesDict.hasOwnProperty(field) && escapedFields.indexOf(field) == -1)
         {
-            escapedFields.push(field);
+            escapedFields.push(fieldNamesDict[field]);
         }
     }
 
-    return escapedFields.length == 0 ? this.fieldNames : escapedFields;
+    return escapedFields.length == 0 ? getDefaultFieldList() : escapedFields;
 }
 
-export class SqlAndParameterList
+export function getDefaultFieldList() : string[] 
 {
-    sql : string;
-    parameterList: any[];
+    let fieldNames: string[] = [];
+    //dear javascript, you suck and you should be ashamed.
+    for(let key in fieldNamesDict)
+    {
+        fieldNames.push(fieldNamesDict[key])
+    }
+    return fieldNames;
 }
 
-export function BuildSqlAndParameterList(args : queries.GetJamsListQueryArgs) : SqlAndParameterList
+export function BuildSqlAndParameterList(args : getJamListRequestModel) : { sql : string; parameterList: any[]; }
 {
     let sql = "SELECT ";
 
     if(args.countOnly === true)
     {
-        sql += "COUNT(1)";
+        sql += "COUNT(1) ";
     }
     else
     {
-        sql += GetEscapedFieldNames(args).join(",");
+        //always include line in the query results
+        sql += "jams.line, " + GetEscapedFieldNames(args).join(",");
     }
     
     sql += " FROM waze.jams jams" +
-    " INNER JOIN waze.coordinates coordinates" +
-    " ON jams.id = coordinates.jam_id" +
+        " INNER JOIN "+
+        " ( "+
+            " SELECT C.jam_id "+
+            " FROM waze.coordinates AS C "+
+            " WHERE C.longitude "+
+            " BETWEEN $3 AND $4 "+
+            " AND C.latitude BETWEEN $5 AND $6) "+
+        " AS coords ON coords.jam_id = jams.id "+
     " WHERE " +
-    " jams.pub_utc_date BETWEEN $1 AND $2" +
-    " AND coordinates.latitude BETWEEN $3 AND $4" +
-    " AND coodtinates.longitude BETWEEN $5 AND $6";
-
+    " jams.pub_utc_date BETWEEN $1 AND $2 ";
+    
     let parameters : any[] = [
-        args.startDateTime, 
-        args.endDateTime,
+        args.getStartDateTime(), 
+        args.getEndDateTime(),
         args.minLat,
         args.maxLat,
         args.minLon,
@@ -92,10 +103,10 @@ export function BuildSqlAndParameterList(args : queries.GetJamsListQueryArgs) : 
         parameters = parameters.concat(args.roadTypes);
     }
 
-    if(args.street)
+    if(args.streetName)
     {
         //this has to be a like. case-sensitivity depends on collation.
-        parameters.push("%" + args.street + "%");
+        parameters.push("%" + args.streetName + "%");
         sql += " AND jams.street LIKE $" + parameters.length;
     }
 

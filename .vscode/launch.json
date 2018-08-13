@@ -7,8 +7,18 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "DB - GetJamsSnapshotQuery",
             "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/db/getJamSnapshotQuery.js",
+            "preLaunchTask": "build-waze-data-api",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
+        },{
+            "type": "node",
+            "request": "launch",
+            "name": "DB - GetJamListQuery",
+            "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/db/getJamListQuery.js",
             "preLaunchTask": "build-waze-data-api",
             "outFiles": [
                 "${workspaceFolder}/**/*.js"

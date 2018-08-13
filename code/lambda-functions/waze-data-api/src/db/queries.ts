@@ -4,47 +4,26 @@ import * as entities from '../../../shared-lib/src/entities'
 import getJamsListQueryBuilder = require("./getJamsListQueryBuilder");
 import fs = require('fs');
 import { getJamSnapshotRequestModel } from '../api-models/getJamSnapshotRequestModel';
+import { getJamListRequestModel } from "../api-models/getJamListRequestModel";
+import * as jamQueryResultMapper from "./jamQueryResultMapper";
 import * as getJamsSnapshotQueryBuilder from "./getJamListSnapshotQueryBuilder";
-import { GetJamsListSnapshotResult } from "../api-models/getJamSnapshotResponse";
+import { getJamSnapshotResponse } from "../api-models/getJamSnapshotResponse";
 
-export class GetJamsListQueryArgs {
-    startDateTime: Date;
-    endDateTime: Date;
-    minLat: number;
-    maxLat: number;
-    minLon: number;
-    maxLon: number;
-    levels: number[];
-    roadTypes: number[];
-    street: string;
-    delayMin: number;
-    delayMax: number;
-    speedMin: number;
-    speedMax: number;
-    lengthMin: number;
-    lengthMax: number;
-    num: number;
-    offset: number;
-    countOnly: boolean;
-    
-    fieldNames: string[];
-}
 
-export async function GetJamsList(args: GetJamsListQueryArgs): Promise<entities.Jam[]>
+
+export async function getJamsList(args: getJamListRequestModel): Promise<entities.JamWithLine[]>
 {
-    var query = getJamsListQueryBuilder.BuildSqlAndParameterList(args);
+    let query = getJamsListQueryBuilder.BuildSqlAndParameterList(args);
     let result = await connectionPool.getPool().query(query.sql, query.parameterList);
 
     if(result.rowCount === 0){
         //nothing found, return null
         return null;
     }
-    
-    throw new Error("This method is not implemented.");
-    
+    return jamQueryResultMapper.toJamWithLine(result, args.includeCoordinates);
 }
 
-export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<GetJamsListSnapshotResult>
+export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<getJamSnapshotResponse>
 {
     let dataFileQuery = getJamsSnapshotQueryBuilder.buildDataFileSqlAndParameterList(queryArgs);
     let dfResponse = await connectionPool.getPool().query(dataFileQuery.sql, dataFileQuery.parameterList);
@@ -60,7 +39,7 @@ export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestMo
     {
         let jamsQuery = getJamsSnapshotQueryBuilder.buildJamSqlAndParameterList(queryArgs, row.file_id);
         let jamsResponse = await connectionPool.getPool().query(jamsQuery.sql, jamsQuery.parameterList);
-        getJamsListSnapshotResult.jams = getJamsSnapshotQueryBuilder.mapJamsFromJamQueryResult(jamsResponse);
+        getJamsListSnapshotResult.jams = jamQueryResultMapper.toJamWithLine(jamsResponse, queryArgs.includeCoordinates);
     }
     
     return getJamsListSnapshotResult;    
