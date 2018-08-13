@@ -1,5 +1,6 @@
 
-\.vscode/
+# let's allow .vscode so the debugger and launch settings get saved
+#\.vscode/
 
 node_modules/
 *.log
