@@ -46,15 +46,24 @@ export async function GetJamsList(args: GetJamsListQueryArgs): Promise<entities.
 
 export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<GetJamsListSnapshotResult>
 {
-    var query = getJamsSnapshotQueryBuilder.buildSqlAndParameterList(queryArgs);
-    let queryResponse = await connectionPool.getPool().query(query.sql, query.parameterList);
-
-    if(queryResponse.rowCount === 0){
-        //nothing found, return null
+    let dataFileQuery = getJamsSnapshotQueryBuilder.buildDataFileSqlAndParameterList(queryArgs);
+    let dfResponse = await connectionPool.getPool().query(dataFileQuery.sql, dataFileQuery.parameterList);
+    
+    if(dfResponse.rowCount === 0){
+        //nothing found, return null?
         return null;
     }
     
-    return getJamsSnapshotQueryBuilder.mapSnapshotResultFromQueryQueryResult(queryResponse);
+    let getJamsListSnapshotResult = getJamsSnapshotQueryBuilder.mapSnapshotResultFromDataFileQueryResult(dfResponse);
+    let row = dfResponse.rows[0];
+    if(row.file_id)
+    {
+        let jamsQuery = getJamsSnapshotQueryBuilder.buildJamSqlAndParameterList(queryArgs, row.file_id);
+        let jamsResponse = await connectionPool.getPool().query(jamsQuery.sql, jamsQuery.parameterList);
+        getJamsListSnapshotResult.jams = getJamsSnapshotQueryBuilder.mapJamsFromJamQueryResult(jamsResponse);
+    }
+    
+    return getJamsListSnapshotResult;    
 }
 
 

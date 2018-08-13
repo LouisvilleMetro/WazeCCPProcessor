@@ -6,12 +6,12 @@ import { QueryResult } from 'pg';
 import { GetJamsListSnapshotResult, JamSnapshot } from "../api-models/getJamSnapshotResponse";
 
 
-export function mapSnapshotResultFromQueryQueryResult(queryResponse : QueryResult) : GetJamsListSnapshotResult
+export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResult) : GetJamsListSnapshotResult
 {
     let result = new GetJamsListSnapshotResult();
     result.jams = [];
 
-    for(let row of queryResponse.rows)
+    for(let row of dfResponse.rows)
     {
         if(!result.timeframeReturned)        
         {
@@ -34,45 +34,78 @@ export function mapSnapshotResultFromQueryQueryResult(queryResponse : QueryResul
                 endTimeMillis : <number>row.prev_end_time_millis
             };
         }
-        result.jams.push(mapJamFromQueryRow(row));
+        
     }
 
     return result;
 }
 
 
-export function mapJamFromQueryRow(row: any) : JamSnapshot {
-    let jam: JamSnapshot = {
-        id : row.id || null,
-        uuid : row.uuid || null,
-        pub_millis : row.pub_millis || null,
-        pub_utc_date : row.pub_utc_date || null,
-        start_node : row.start_node || null,
-        end_node : row.end_node || null,
-        road_type : row.road_type || null,
-        street : row.street || null,
-        city : row.city || null,
-        country : row.country || null,
-        delay : row.delay  || null,
-        speed : row.speed || null,
-        speed_kmh : row.speed_kmh || null,
-        length : row.length || null,
-        turn_type : row.turn_type  || null,
-        level : row.level || null,
-        blocking_alert_id : row.blocking_alert_id || null,
-        line: null,
-        type : row.type || null,
-        turn_line : row.turn_line || null,
-        datafile_id : row.datafile_id || null,
-    };
-    if(row.line)
+export function mapJamsFromJamQueryResult(queryResponse: QueryResult) : JamSnapshot[] {
+    let jams: JamSnapshot[] = [];
+    for(let row of queryResponse.rows)
     {
-        jam.line = JSON.parse(row.line);
+        let jam: JamSnapshot = {
+            id : row.id || null,
+            uuid : row.uuid || null,
+            pub_millis : row.pub_millis || null,
+            pub_utc_date : row.pub_utc_date || null,
+            start_node : row.start_node || null,
+            end_node : row.end_node || null,
+            road_type : row.road_type || null,
+            street : row.street || null,
+            city : row.city || null,
+            country : row.country || null,
+            delay : row.delay  || null,
+            speed : row.speed || null,
+            speed_kmh : row.speed_kmh || null,
+            length : row.length || null,
+            turn_type : row.turn_type  || null,
+            level : row.level || null,
+            blocking_alert_id : row.blocking_alert_id || null,
+            line: null,
+            type : row.type || null,
+            turn_line : row.turn_line || null,
+            datafile_id : row.datafile_id || null,
+        };
+        if(row.line)
+        {
+            jam.line = JSON.parse(row.line);
+        }
+        jams.push(jam);
     }
-    return jam;
+    
+    return jams;
 }
 
-export function buildSqlAndParameterList(args: getJamSnapshotRequestModel): { sql:string, parameterList: any[] } 
+export function buildDataFileSqlAndParameterList(args: getJamSnapshotRequestModel) : { sql:string, parameterList: any[] }
+{
+    let sql = "SELECT d.* FROM" +
+    " (SELECT" +
+        " df.id file_id," +
+        " df.start_time_millis," +
+        " df.end_time_millis," +
+        " LAG(df.id,1) OVER w as prev_file_id," +
+        " LAG(df.start_time_millis,1) OVER w as prev_start_time_millis," +
+        " LAG(df.end_time_millis,1) OVER w  as prev_end_time_millis," +
+        " LEAD(df.id,1) OVER w  as next_file_id," +
+        " LEAD(df.start_time_millis,1) OVER w  as next_start_time_millis," +
+        " LEAD(df.end_time_millis,1) OVER w  as next_end_time_millis" +
+    " FROM" +
+        " waze.data_files df" +
+    " WINDOW w AS (" +
+        " ORDER BY df.start_time_millis, df.end_time_millis" +
+      ")" +
+    ") d" +
+    " WHERE" +
+    "    $1 BETWEEN d.start_time_millis AND d.end_time_millis;";
+    let parameters :any[] = [
+        moment(args.getSnapshotDateTime()).utc().valueOf(), //make sure we have a millisecond timstamp
+    ];
+    return {sql, parameterList: parameters};
+}
+
+export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, dataFileId : number): { sql:string, parameterList: any[] } 
 {
     let sql = "SELECT ";
 
@@ -85,33 +118,18 @@ export function buildSqlAndParameterList(args: getJamSnapshotRequestModel): { sq
         sql += getEscapedFieldNames(args).join(",");
     }
     
-    sql += " FROM waze.jams j" +
-        " INNER JOIN (" +
-            " SELECT " +
-                " df.id file_id," +
-                " df.start_time_millis," +
-                " df.end_time_millis," +
-                " LAG(df.id,1) OVER( order by start_time_millis) as prev_file_id," +
-                " LAG(df.start_time_millis,1) OVER( order by start_time_millis) as prev_start_time_millis," +
-                " LAG(df.end_time_millis,1) OVER( order by start_time_millis) as prev_end_time_millis," +
-                " LEAD(df.id,1) OVER( order by start_time_millis) as next_file_id," +
-                " LEAD(df.start_time_millis,1) OVER( order by start_time_millis) as next_start_time_millis," +
-                " LEAD(df.end_time_millis,1) OVER( order by start_time_millis) as next_end_time_millis" +
-            " FROM"+
-                " waze.data_files df"+
-            ") files"+
-        " ON files.file_id = j.datafile_id,"+
+    sql += " FROM waze.jams j," +
       // TODO: Figure out how to alias these as something a bit more descriptive
       " jsonb_to_recordset(j.line) AS (x real, y real)"+
     
     " WHERE"+
-        " $1 BETWEEN files.start_time_millis AND files.end_time_millis"+
+        " j.datafile_id = $1"+
         " AND x BETWEEN $2 AND $3"+
         " AND y BETWEEN $4 AND $5";
     
 
     let parameters : any[] = [
-        moment(args.getSnapshotDateTime()).utc().valueOf(), //make sure we have a millisecond timstamp 
+        dataFileId,
         args.minLat,
         args.maxLat,
         args.minLon,
@@ -280,27 +298,11 @@ SELECT DISTINCT
     files.prev_start_time_millis,
     files.prev_end_time_millis
 FROM
-     waze.jams j
-     INNER JOIN (
-      SELECT
-          df.id file_id,
-          df.start_time_millis,
-          df.end_time_millis,
-          LAG(df.id,1) OVER( order by start_time_millis) as prev_file_id,
-          LAG(df.start_time_millis,1) OVER( order by start_time_millis) as prev_start_time_millis,
-          LAG(df.end_time_millis,1) OVER( order by start_time_millis) as prev_end_time_millis,
-          LEAD(df.id,1) OVER( order by start_time_millis) as next_file_id,
-          LEAD(df.start_time_millis,1) OVER( order by start_time_millis) as next_start_time_millis,
-          LEAD(df.end_time_millis,1) OVER( order by start_time_millis) as next_end_time_millis
-
-      FROM
-           waze.data_files df
-    ) files
-    ON files.file_id = j.datafile_id,
+     waze.jams j,
      -- TODO: Figure out how to alias these as something a bit more descriptive
     jsonb_to_recordset(j.line) AS (x real, y real)
 WHERE
-    $1 BETWEEN files.start_time_millis AND files.end_time_millis
+    j.datafile_id = $1 
     AND y BETWEEN $2 AND $3
     AND x BETWEEN $4 AND $5;
 
