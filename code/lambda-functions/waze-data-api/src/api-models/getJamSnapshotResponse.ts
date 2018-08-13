@@ -1,7 +1,8 @@
 import * as entities from '../../../shared-lib/src/entities'
 
-export class JamSnapshot extends entities.JamBase<entities.Point> {
-    
+export class JamSnapshot extends entities.JamBase<Array<entities.Point>> {
+    startLongitude: number;
+    startLatitude: number;
 }
 
 export class GetJamsListSnapshotResult 

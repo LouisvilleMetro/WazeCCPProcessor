@@ -67,10 +67,19 @@ export function mapJamsFromJamQueryResult(queryResponse: QueryResult) : JamSnaps
             type : row.type || null,
             turn_line : row.turn_line || null,
             datafile_id : row.datafile_id || null,
+            startLatitude: 0,
+            startLongitude: 0,
         };
         if(row.line)
         {
-            jam.line = JSON.parse(row.line);
+            //looks like pg's node client does this for us?
+            //jam.line = JSON.parse(row.line);
+            jam.line = row.line;
+            if(jam.line.length > 0)
+            {
+                jam.startLatitude = jam.line[0].y;
+                jam.startLongitude = jam.line[0].x;
+            }
         }
         jams.push(jam);
     }
@@ -80,25 +89,45 @@ export function mapJamsFromJamQueryResult(queryResponse: QueryResult) : JamSnaps
 
 export function buildDataFileSqlAndParameterList(args: getJamSnapshotRequestModel) : { sql:string, parameterList: any[] }
 {
-    let sql = "SELECT d.* FROM" +
-    " (SELECT" +
-        " df.id file_id," +
-        " df.start_time_millis," +
-        " df.end_time_millis," +
-        " LAG(df.id,1) OVER w as prev_file_id," +
-        " LAG(df.start_time_millis,1) OVER w as prev_start_time_millis," +
-        " LAG(df.end_time_millis,1) OVER w  as prev_end_time_millis," +
-        " LEAD(df.id,1) OVER w  as next_file_id," +
-        " LEAD(df.start_time_millis,1) OVER w  as next_start_time_millis," +
-        " LEAD(df.end_time_millis,1) OVER w  as next_end_time_millis" +
-    " FROM" +
-        " waze.data_files df" +
-    " WINDOW w AS (" +
-        " ORDER BY df.start_time_millis, df.end_time_millis" +
-      ")" +
-    ") d" +
-    " WHERE" +
-    "    $1 BETWEEN d.start_time_millis AND d.end_time_millis;";
+    let sql = "SELECT * FROM ("+
+            " SELECT"+
+                " df.id file_id,"+
+                " df.start_time_millis,"+
+                " df.end_time_millis"+
+            " FROM"+
+                " waze.data_files df"+
+            " WHERE"+
+                " $1 BETWEEN df.start_time_millis AND df.end_time_millis"+
+            " ORDER BY"+
+                " df.start_time_millis DESC"+
+            " LIMIT 1"+
+        " ) AS thisData"+
+        " FULL OUTER JOIN ("+
+            " SELECT"+
+                " dfPrev.id prev_file_id,"+
+                " dfPrev.start_time_millis prev_start_time_millis,"+
+                " dfPrev.end_time_millis prev_start_time_millis"+
+            " FROM"+
+                " waze.data_files dfPrev"+
+            " WHERE"+
+                " dfPrev.end_time_millis < $1"+
+            " ORDER BY"+
+                " dfPrev.start_time_millis DESC"+
+            " LIMIT 1"+
+        " ) AS prevData ON 1=1"+
+        " FULL OUTER JOIN ("+
+            " SELECT"+
+                " dfNext.id next_file_id,"+
+                " dfNext.start_time_millis next_start_time_millis,"+
+                " dfNext.end_time_millis next_end_time_millis"+
+            " FROM"+
+                " waze.data_files dfNext"+
+            " WHERE"+
+                " dfNext.start_time_millis > $1"+
+            " ORDER BY"+
+                " dfNext.start_time_millis ASC"+
+            " LIMIT 1"+
+        " ) AS nextData ON 1=1;";
     let parameters :any[] = [
         moment(args.getSnapshotDateTime()).utc().valueOf(), //make sure we have a millisecond timstamp
     ];
@@ -111,23 +140,27 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
 
     if(args.countOnly === true)
     {
-        sql += "COUNT(1)";
+        sql += "COUNT(1) ";
     }
     else
     {
-        sql += getEscapedFieldNames(args).join(",");
+        //lat/long are in a json blob. they're always returned from the jams table
+        sql += "j.line, " + getEscapedFieldNames(args).join(",");
     }
     
-    sql += " FROM waze.jams j," +
-      // TODO: Figure out how to alias these as something a bit more descriptive
-      " jsonb_to_recordset(j.line) AS (x real, y real)"+
-    
+    sql += " FROM waze.jams j"+
+    " INNER JOIN ("+
+        " SELECT"+
+            " C.jam_id"+
+        " FROM"+
+            " waze.coordinates AS C"+
+        " WHERE"+
+            " C.longitude BETWEEN $2 AND $3"+
+            " AND C.latitude BETWEEN $4 AND $5"+
+        ") AS coords ON coords.jam_id = j.id"+
     " WHERE"+
-        " j.datafile_id = $1"+
-        " AND x BETWEEN $2 AND $3"+
-        " AND y BETWEEN $4 AND $5";
+    " j.datafile_id = $1"; 
     
-
     let parameters : any[] = [
         dataFileId,
         args.minLat,
@@ -224,14 +257,13 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
 }
 
 let fieldNamesDict : { [id: string] : string} = {
+    //lat/long are in a json blob. they're always returned from the jams table
     "city": "j.city",
     "delay" : "j.delay",
     "end_node" : "j.end_node",
     "id" : "j.id",
-    "latitude" : "x as latitude",
     "length" : "j.length",
     "level" : "j.level",
-    "longitude" : "y as longitude",
     "pub_utc_date" : "j.pub_utc_date",
     "road_type" : "j.road_type",
     "speed" : "j.speed",
@@ -298,12 +330,17 @@ SELECT DISTINCT
     files.prev_start_time_millis,
     files.prev_end_time_millis
 FROM
-     waze.jams j,
-     -- TODO: Figure out how to alias these as something a bit more descriptive
-    jsonb_to_recordset(j.line) AS (x real, y real)
-WHERE
+     waze.jams j
+       INNER JOIN
+         (
+          SELECT C.jam_id
+          FROM waze.coordinates AS C
+          WHERE C.longitude
+          BETWEEN $2 AND $3
+          AND C.latitude BETWEEN $4 AND $5)
+      AS coords ON coords.jam_id = j.id
+WHERE 
     j.datafile_id = $1 
-    AND y BETWEEN $2 AND $3
-    AND x BETWEEN $4 AND $5;
+LIMIT 50;
 
 */
