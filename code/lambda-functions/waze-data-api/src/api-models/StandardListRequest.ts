@@ -68,6 +68,9 @@ export abstract class StandardListRequest<T> implements ISerializable<T>, IValid
         if(input.queryStringParameters['fields']) {
             this.fields = input.queryStringParameters['fields'].split(',');
         }
+        else {
+            this.fields = [];
+        }
 
         if(input.queryStringParameters['format']){
             this.format = input.queryStringParameters['format'];
