@@ -1,7 +1,17 @@
 import * as entities from '../../../shared-lib/src/entities';
 import { QueryResult } from 'pg';
 
-export function toJamWithLine(queryResponse: QueryResult, includeCoordinates: boolean) : entities.JamWithLine[] {
+export class JamMappingSettings {
+    constructor(
+        public includeCoordinates: boolean,
+        public includeLongitude: boolean,
+        public includeLatitude: boolean)
+    {
+        
+    }
+}
+
+export function toJamWithLine(queryResponse: QueryResult, mappingSettings: JamMappingSettings) : entities.JamWithLine[] {
     let jams: entities.JamWithLine[] = [];
     for(let row of queryResponse.rows)
     {
@@ -34,12 +44,19 @@ export function toJamWithLine(queryResponse: QueryResult, includeCoordinates: bo
         //jam.line = JSON.parse(row.line);
         if(row.line && row.line.length && row.line.length > 0)
         {
-            jam.startLatitude = row.line[0].y;
-            jam.startLongitude = row.line[0].x;
-            if(includeCoordinates)
+            if(mappingSettings.includeLatitude)
+            {
+                jam.startLatitude = row.line[0].y;
+            }
+            if(mappingSettings.includeLongitude)
+            {
+                jam.startLongitude = row.line[0].x;
+            }
+            if(mappingSettings.includeCoordinates)
             {
                 jam.line = row.line;
             }
+            
         }
         jams.push(jam);
     }

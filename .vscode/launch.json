@@ -24,6 +24,26 @@
                 "${workspaceFolder}/**/*.js"
             ],
             "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
+        },{
+            "type": "node",
+            "request": "launch",
+            "name": "API - GetJamsSnapshot",
+            "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/getJamsSnapshot.js",
+            "preLaunchTask": "build-waze-data-api",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
+        },{
+            "type": "node",
+            "request": "launch",
+            "name": "API - GetJamsList",
+            "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/getJamsList.js",
+            "preLaunchTask": "build-waze-data-api",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
         }
     ]
 }

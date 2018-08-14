@@ -3,12 +3,19 @@ import * as entities from '../../../shared-lib/src/entities'
 import moment = require("moment");
 import { getJamSnapshotRequestModel } from "../api-models/getJamSnapshotRequestModel";
 import { QueryResult } from 'pg';
-import { getJamSnapshotResponse } from "../api-models/getJamSnapshotResponse";
+import { JamMappingSettings } from "./jamQueryResultMapper";
 
-
-export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResult) : getJamSnapshotResponse
+export class getJamListSnapshotQueryResult
 {
-    let result = new getJamSnapshotResponse();
+    jams : entities.JamWithLine[];
+    timeframeReturned: entities.Timeframe;
+    nextTimeframe: entities.Timeframe;
+    previousTimeframe: entities.Timeframe;
+}
+
+export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResult) : getJamListSnapshotQueryResult
+{
+    let result = new getJamListSnapshotQueryResult();
     result.jams = [];
 
     for(let row of dfResponse.rows)
@@ -39,9 +46,6 @@ export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResul
 
     return result;
 }
-
-
-
 
 export function buildDataFileSqlAndParameterList(args: getJamSnapshotRequestModel) : { sql:string, parameterList: any[] }
 {
@@ -90,9 +94,11 @@ export function buildDataFileSqlAndParameterList(args: getJamSnapshotRequestMode
     return {sql, parameterList: parameters};
 }
 
-export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, dataFileId : number): { sql:string, parameterList: any[] } 
+export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, dataFileId : number)
+    : { sql : string; parameterList: any[]; mappingSettings: JamMappingSettings  }
 {
     let sql = "SELECT ";
+    let escapedFields: string[] = [];
 
     if(args.countOnly === true)
     {
@@ -100,8 +106,8 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
     }
     else
     {
-        //lat/long are in a json blob. they're always returned from the jams table
-        sql += "j.line, " + getEscapedFieldNames(args).join(",");
+        escapedFields = getEscapedFieldNames(args);
+        sql += escapedFields.join(",");
     }
     
     sql += " FROM waze.jams j"+
@@ -200,7 +206,7 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
     if(args.offset)
     {
         //injection risk - try to make sure what we have here is numeric
-        sql += " OFFSET " + parseInt(args.num.toString());
+        sql += " OFFSET " + parseInt(args.offset.toString());
     }
 
     console.debug("getJamListSnapshot Sql: %s", sql);
@@ -208,7 +214,12 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
 
     return {
         sql : sql,
-        parameterList : parameters
+        parameterList : parameters,
+        mappingSettings: new JamMappingSettings(
+            (!args.countOnly && args.includeCoordinates),
+            (!args.countOnly && escapedFields.indexOf(lineField) !== -1 ),
+            (!args.countOnly && escapedFields.indexOf(lineField) !== -1 )
+        )
     };
 }
 
@@ -230,11 +241,15 @@ let fieldNamesDict : { [id: string] : string} = {
     "uuid" : "j.uuid",
 }
 
+let latitudeField = "latitude";
+let longitudeField = "longitude";
+let lineField = "line";
+
 export function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : string[]
 {
     let escapedFields: string[] = [];
     
-    for(let field of queryArgs.fields)
+    for(let field of queryArgs.fields || [])
     {
         field = field.toLowerCase();
         //if it's in our list of allowed field names and we don't 
@@ -243,6 +258,15 @@ export function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : st
         {
             escapedFields.push(fieldNamesDict[field]);
         }
+        else if(field === latitudeField || field === longitudeField && escapedFields.indexOf(lineField) === -1)
+        {
+            escapedFields.push(lineField);
+        }
+    }
+    //make sure we include the line field if they want it.
+    if(queryArgs.includeCoordinates && escapedFields.indexOf(lineField) === -1)
+    {
+        escapedFields.push(lineField);
     }
 
     return escapedFields.length == 0 ? getDefaultFieldList() : escapedFields;
@@ -259,44 +283,3 @@ export function getDefaultFieldList() : string[]
     }
     return fieldNames;
 }
-/*
-
-
-SELECT DISTINCT
-    j.id,
-    j.uuid wazeid,
-    j.pub_utc_date,
-    x as latitude,
-    y as longitude,
-    j.start_node,
-    j.end_node,
-    j.street,
-    j.speed,
-    j.speed_kmh,
-    j.city,
-    j.delay,
-    j.length,
-    j.turn_type,
-    j.level,
-    j.road_type,
-    files.start_time_millis,
-    files.end_time_millis,
-    files.next_start_time_millis,
-    files.next_end_time_millis,
-    files.prev_start_time_millis,
-    files.prev_end_time_millis
-FROM
-     waze.jams j
-       INNER JOIN
-         (
-          SELECT C.jam_id
-          FROM waze.coordinates AS C
-          WHERE C.longitude
-          BETWEEN $2 AND $3
-          AND C.latitude BETWEEN $4 AND $5)
-      AS coords ON coords.jam_id = j.id
-WHERE 
-    j.datafile_id = $1 
-LIMIT 50;
-
-*/

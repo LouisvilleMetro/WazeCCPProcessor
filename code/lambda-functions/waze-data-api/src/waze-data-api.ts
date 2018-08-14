@@ -2,7 +2,9 @@ import AWS = require('aws-sdk');
 import { Handler, Context, Callback } from 'aws-lambda';
 import consolePatch from '../../shared-lib/src/consolePatch'
 import { getJamSnapshotRequestModel } from './api-models/getJamSnapshotRequestModel';
+import { getJamSnapshotResponseModel } from "./api-models/getJamSnapshotResponseModel";
 import { getJamListRequestModel } from "./api-models/getJamListRequestModel";
+import { JamModel } from "./api-models/JamModel";
 import { customHttpError } from './utils/customError';
 import { buildCorsResponse } from './utils/corsResponse';
 import * as queries from "./db/queries";
@@ -52,8 +54,8 @@ const getJamsList: Handler = wrappedHandler(async (event: any, context: Context,
 
         //we deserialized and validated, so now safe to got gather the data
         let data = await queries.getJamsList(request);
-        
-        let response = buildCorsResponse(200, JSON.stringify(data));
+        let model = JamModel.fromArrayOfJamWithLine(data);
+        let response = buildCorsResponse(200, JSON.stringify(model));
         callback(null, response);
 });
 
@@ -68,8 +70,8 @@ const getJamsSnapshot: Handler = wrappedHandler(async (event: any, context: Cont
 
         //we deserialized and validated, so now safe to got gather the data
         let data = await queries.getJamListSnapshotQuery(request);
-        
-        let response = buildCorsResponse(200, JSON.stringify(data));
+        let model = getJamSnapshotResponseModel.fromJamListSnapshotQueryResult(data);
+        let response = buildCorsResponse(200, JSON.stringify(model));
         callback(null, response);
 
 });

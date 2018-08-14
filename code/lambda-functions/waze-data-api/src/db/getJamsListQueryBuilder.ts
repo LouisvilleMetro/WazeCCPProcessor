@@ -2,55 +2,14 @@ import queries = require("./queries");
 import { getJamListRequestModel } from "../api-models/getJamListRequestModel";
 import { QueryResult } from 'pg';
 import * as entities from '../../../shared-lib/src/entities'
+import { JamMappingSettings } from "./jamQueryResultMapper";
 
-let fieldNamesDict : { [id: string] : string} = {
-    "city": "jams.city",
-    "delay" : "jams.delay",
-    "end_node" : "jams.end_node",
-    "id" : "jams.id",
-    "length" : "jams.length",
-    "level" : "jams.level",
-    "pub_utc_date" : "jams.pub_utc_date",
-    "road_type" : "jams.road_type",
-    "speed" : "jams.speed",
-    "speed_kmh" : "jams.speed_kmh",
-    "start_node" : "jams.start_node",
-    "street" : "jams.street",
-    "turn_type" : "jams.turn_type",
-    "uuid" : "jams.uuid",
-}
 
-export function GetEscapedFieldNames(queryObject : getJamListRequestModel) : string[]
-{
-    let escapedFields: string[] = [];
-    for(let field of queryObject.fields || [])
-    {
-        field = field.toLowerCase();
-        //if it's in our list of allowed field names and we don't 
-        //already have it in our list of escaped field names, then add it.
-        if(fieldNamesDict.hasOwnProperty(field) && escapedFields.indexOf(field) == -1)
-        {
-            escapedFields.push(fieldNamesDict[field]);
-        }
-    }
-
-    return escapedFields.length == 0 ? getDefaultFieldList() : escapedFields;
-}
-
-export function getDefaultFieldList() : string[] 
-{
-    let fieldNames: string[] = [];
-    //dear javascript, you suck and you should be ashamed.
-    for(let key in fieldNamesDict)
-    {
-        fieldNames.push(fieldNamesDict[key])
-    }
-    return fieldNames;
-}
-
-export function BuildSqlAndParameterList(args : getJamListRequestModel) : { sql : string; parameterList: any[]; }
+export function buildSqlAndParameterList(args : getJamListRequestModel) 
+    : { sql : string; parameterList: any[]; mappingSettings: JamMappingSettings  }
 {
     let sql = "SELECT ";
+    let escapedFields: string[] = [];
 
     if(args.countOnly === true)
     {
@@ -58,8 +17,8 @@ export function BuildSqlAndParameterList(args : getJamListRequestModel) : { sql 
     }
     else
     {
-        //always include line in the query results
-        sql += "jams.line, " + GetEscapedFieldNames(args).join(",");
+        escapedFields = getEscapedFieldNames(args);
+        sql += escapedFields.join(",");
     }
     
     sql += " FROM waze.jams jams" +
@@ -74,6 +33,7 @@ export function BuildSqlAndParameterList(args : getJamListRequestModel) : { sql 
     " WHERE " +
     " jams.pub_utc_date BETWEEN $1 AND $2 ";
     
+
     let parameters : any[] = [
         args.getStartDateTime(), 
         args.getEndDateTime(),
@@ -158,15 +118,79 @@ export function BuildSqlAndParameterList(args : getJamListRequestModel) : { sql 
     if(args.offset)
     {
         //injection risk - try to make sure what we have here is numeric
-        sql += " OFFSET " + parseInt(args.num.toString());
+        sql += " OFFSET " + parseInt(args.offset.toString());
     }
 
     return {
         sql : sql,
-        parameterList : parameters
+        parameterList : parameters,
+        mappingSettings: new JamMappingSettings(
+            (!args.countOnly && args.includeCoordinates),
+            (!args.countOnly && escapedFields.indexOf(lineField) !== -1 ),
+            (!args.countOnly && escapedFields.indexOf(lineField) !== -1 )
+        )
     };
 
     
 }
 
+let fieldNamesDict : { [id: string] : string} = {
+    "city": "jams.city",
+    "delay" : "jams.delay",
+    "end_node" : "jams.end_node",
+    "id" : "jams.id",
+    "length" : "jams.length",
+    "level" : "jams.level",
+    "pub_utc_date" : "jams.pub_utc_date",
+    "road_type" : "jams.road_type",
+    "speed" : "jams.speed",
+    "speed_kmh" : "jams.speed_kmh",
+    "start_node" : "jams.start_node",
+    "street" : "jams.street",
+    "turn_type" : "jams.turn_type",
+    "uuid" : "jams.uuid",
+    
+}
+
+let latitudeField = "latitude";
+let longitudeField = "longitude";
+let lineField = "line";
+
+export function getEscapedFieldNames(queryObject : getJamListRequestModel) : string[]
+{
+    let escapedFields: string[] = [];
+    for(let field of queryObject.fields || [])
+    {
+        field = field.toLowerCase();
+        //if it's in our list of allowed field names and we don't 
+        //already have it in our list of escaped field names, then add it.
+        if(fieldNamesDict.hasOwnProperty(field) && escapedFields.indexOf(field) === -1)
+        {
+            escapedFields.push(fieldNamesDict[field]);
+        }
+        else if(field === latitudeField || field === longitudeField && escapedFields.indexOf(lineField) === -1)
+        {
+            escapedFields.push(lineField);
+        }
+    }
+
+    //make sure we include the line field if they want it.
+    if(queryObject.includeCoordinates && escapedFields.indexOf(lineField) === -1)
+    {
+        escapedFields.push(lineField);
+    }
+    
+    return escapedFields.length == 0 ? getDefaultFieldList() : escapedFields;
+}
+
+export function getDefaultFieldList() : string[] 
+{
+    let fieldNames: string[] = [];
+    //dear javascript, you suck and you should be ashamed.
+    for(let key in fieldNamesDict)
+    {
+        fieldNames.push(fieldNamesDict[key])
+    }
+    return fieldNames;
+}
 

@@ -7,30 +7,27 @@ import { getJamSnapshotRequestModel } from '../api-models/getJamSnapshotRequestM
 import { getJamListRequestModel } from "../api-models/getJamListRequestModel";
 import * as jamQueryResultMapper from "./jamQueryResultMapper";
 import * as getJamsSnapshotQueryBuilder from "./getJamListSnapshotQueryBuilder";
-import { getJamSnapshotResponse } from "../api-models/getJamSnapshotResponse";
-
-
 
 export async function getJamsList(args: getJamListRequestModel): Promise<entities.JamWithLine[]>
 {
-    let query = getJamsListQueryBuilder.BuildSqlAndParameterList(args);
+    let query = getJamsListQueryBuilder.buildSqlAndParameterList(args);
     let result = await connectionPool.getPool().query(query.sql, query.parameterList);
 
     if(result.rowCount === 0){
-        //nothing found, return null
-        return null;
+        //nothing found
+        return [];
     }
-    return jamQueryResultMapper.toJamWithLine(result, args.includeCoordinates);
+    return jamQueryResultMapper.toJamWithLine(result, query.mappingSettings);
 }
 
-export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<getJamSnapshotResponse>
+export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestModel) : Promise<getJamsSnapshotQueryBuilder.getJamListSnapshotQueryResult>
 {
     let dataFileQuery = getJamsSnapshotQueryBuilder.buildDataFileSqlAndParameterList(queryArgs);
     let dfResponse = await connectionPool.getPool().query(dataFileQuery.sql, dataFileQuery.parameterList);
     
     if(dfResponse.rowCount === 0){
-        //nothing found, return null?
-        return null;
+        //nothing found, return ...what?
+        return new getJamsSnapshotQueryBuilder.getJamListSnapshotQueryResult();
     }
     
     let getJamsListSnapshotResult = getJamsSnapshotQueryBuilder.mapSnapshotResultFromDataFileQueryResult(dfResponse);
@@ -39,7 +36,7 @@ export async function getJamListSnapshotQuery(queryArgs: getJamSnapshotRequestMo
     {
         let jamsQuery = getJamsSnapshotQueryBuilder.buildJamSqlAndParameterList(queryArgs, row.file_id);
         let jamsResponse = await connectionPool.getPool().query(jamsQuery.sql, jamsQuery.parameterList);
-        getJamsListSnapshotResult.jams = jamQueryResultMapper.toJamWithLine(jamsResponse, queryArgs.includeCoordinates);
+        getJamsListSnapshotResult.jams = jamQueryResultMapper.toJamWithLine(jamsResponse, jamsQuery.mappingSettings);
     }
     
     return getJamsListSnapshotResult;    
