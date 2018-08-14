@@ -3,8 +3,9 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import moment = require('moment');
 import { customHttpError } from "../utils/customError";
 import { deserializeFloat, deserializeInteger, deserializeBoolean, deserializeIntegerArray } from "../utils/serializationHelpers";
+import { IJamRequestModel } from "./IJamRequestModel";
 
-export class getJamSnapshotRequestModel extends StandardListRequest<object> {
+export class getJamSnapshotRequestModel extends StandardListRequest<object> implements IJamRequestModel{
     
     // required-ish, we'll set defaults if not passed
     date: string;

@@ -3,22 +3,22 @@ import { getJamListRequestModel } from "../api-models/getJamListRequestModel";
 import { QueryResult } from 'pg';
 import * as entities from '../../../shared-lib/src/entities'
 import { JamMappingSettings } from "./jamQueryResult";
-
+import { JamFieldNames } from "./JamFieldNames";
 
 export function buildSqlAndParameterList(args : getJamListRequestModel) 
     : { sql : string; parameterList: any[]; mappingSettings: JamMappingSettings  }
 {
     let sql = "SELECT ";
-    let escapedFields: string[] = [];
+    let jamFieldNames = new JamFieldNames(fieldNamesDict);
+    let escapedFields = jamFieldNames.getEscapedFieldNames(args);
 
     if(args.countOnly === true)
     {
         sql += "COUNT(1) ";
     }
     else
-    {
-        escapedFields = getEscapedFieldNames(args);
-        sql += escapedFields.join(",");
+    {   
+        sql += escapedFields.dbFields.join(",");
     }
     
     sql += " FROM waze.jams jams" +
@@ -126,8 +126,8 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         parameterList : parameters,
         mappingSettings: new JamMappingSettings(
             (!args.countOnly && args.includeCoordinates),
-            (!args.countOnly && escapedFields.indexOf(lineField) !== -1 ),
-            (!args.countOnly && escapedFields.indexOf(lineField) !== -1 )
+            (!args.countOnly && escapedFields.longitude),
+            (!args.countOnly && escapedFields.latitude)
         )
     };
 
@@ -150,49 +150,5 @@ let fieldNamesDict : { [id: string] : string} = {
     "turn_type" : "jams.turn_type",
     "uuid" : "jams.uuid",
     
-}
-
-let latitudeField = "startlatitude";
-let longitudeField = "startlongitude";
-let lineField = "line";
-
-export function getEscapedFieldNames(queryObject : getJamListRequestModel) : string[]
-{
-    let escapedFields: string[] = [];
-    for(let field of queryObject.fields || [])
-    {
-        field = field.toLowerCase();
-        //if it's in our list of allowed field names and we don't 
-        //already have it in our list of escaped field names, then add it.
-        if(fieldNamesDict.hasOwnProperty(field) && escapedFields.indexOf(field) === -1)
-        {
-            escapedFields.push(fieldNamesDict[field]);
-        }
-        else if(field === latitudeField || field === longitudeField && escapedFields.indexOf(lineField) === -1)
-        {
-            escapedFields.push(lineField);
-        }
-    }
-
-    //make sure we include the line field if they want it.
-    if(queryObject.includeCoordinates && escapedFields.indexOf(lineField) === -1)
-    {
-        escapedFields.push(lineField);
-    }
-    
-    return escapedFields.length == 0 ? getDefaultFieldList() : escapedFields;
-}
-
-export function getDefaultFieldList() : string[] 
-{
-    let fieldNames: string[] = [];
-    //dear javascript, you suck and you should be ashamed.
-    for(let key in fieldNamesDict)
-    {
-        fieldNames.push(fieldNamesDict[key])
-    }
-    fieldNames.push(latitudeField);
-    fieldNames.push(longitudeField);
-    return fieldNames;
 }
 
