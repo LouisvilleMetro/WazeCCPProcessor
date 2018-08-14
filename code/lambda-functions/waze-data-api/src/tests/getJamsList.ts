@@ -36,7 +36,9 @@ let event = {
         "maxLon": "100", 
         "startTime": "12:02",
         "endTime": "12:10",
-        "fields": "city,delay,id,speed"
+        // "fields": "city,delay,id,speed,startlatitude",
+        // "includeCoordinates": "true"
+        "countOnly" : "true"
     }, 
     "pathParameters": <any>null, 
     "stageVariables": <any>null, 

@@ -93,6 +93,10 @@ export class JamModel {
         {
             model.turnType = entity.turn_type;
         }
+        if(entity.level)
+        {
+            model.level = entity.level;
+        }
         if(entity.line)
         {
             model.line = entity.line;

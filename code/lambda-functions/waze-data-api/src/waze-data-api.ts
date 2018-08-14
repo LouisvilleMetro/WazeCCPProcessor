@@ -4,10 +4,11 @@ import consolePatch from '../../shared-lib/src/consolePatch'
 import { getJamSnapshotRequestModel } from './api-models/getJamSnapshotRequestModel';
 import { getJamSnapshotResponseModel } from "./api-models/getJamSnapshotResponseModel";
 import { getJamListRequestModel } from "./api-models/getJamListRequestModel";
-import { JamModel } from "./api-models/JamModel";
+import { JamModel } from "./api-models/jamModel";
 import { customHttpError } from './utils/customError';
 import { buildCorsResponse } from './utils/corsResponse';
 import * as queries from "./db/queries";
+import { getJamListResponseModel } from './api-models/getJamListResponseModel';
 
 // wrapper function for all the handlers that centralizes error handling and logging
 function wrappedHandler(fn: Handler): Handler {
@@ -54,7 +55,7 @@ const getJamsList: Handler = wrappedHandler(async (event: any, context: Context,
 
         //we deserialized and validated, so now safe to got gather the data
         let data = await queries.getJamsList(request);
-        let model = JamModel.fromArrayOfJamWithLine(data);
+        let model = getJamListResponseModel.fromJamQueryResult(data);
         let response = buildCorsResponse(200, JSON.stringify(model));
         callback(null, response);
 });
@@ -73,7 +74,6 @@ const getJamsSnapshot: Handler = wrappedHandler(async (event: any, context: Cont
         let model = getJamSnapshotResponseModel.fromJamListSnapshotQueryResult(data);
         let response = buildCorsResponse(200, JSON.stringify(model));
         callback(null, response);
-
 });
 
 

@@ -2,7 +2,7 @@ import queries = require("./queries");
 import { getJamListRequestModel } from "../api-models/getJamListRequestModel";
 import { QueryResult } from 'pg';
 import * as entities from '../../../shared-lib/src/entities'
-import { JamMappingSettings } from "./jamQueryResultMapper";
+import { JamMappingSettings } from "./jamQueryResult";
 
 
 export function buildSqlAndParameterList(args : getJamListRequestModel) 
@@ -141,7 +141,7 @@ let fieldNamesDict : { [id: string] : string} = {
     "id" : "jams.id",
     "length" : "jams.length",
     "level" : "jams.level",
-    "pub_utc_date" : "jams.pub_utc_date",
+    "jamStartTime" : "jams.pub_millis",
     "road_type" : "jams.road_type",
     "speed" : "jams.speed",
     "speed_kmh" : "jams.speed_kmh",
@@ -152,8 +152,8 @@ let fieldNamesDict : { [id: string] : string} = {
     
 }
 
-let latitudeField = "latitude";
-let longitudeField = "longitude";
+let latitudeField = "startlatitude";
+let longitudeField = "startlongitude";
 let lineField = "line";
 
 export function getEscapedFieldNames(queryObject : getJamListRequestModel) : string[]
@@ -191,6 +191,8 @@ export function getDefaultFieldList() : string[]
     {
         fieldNames.push(fieldNamesDict[key])
     }
+    fieldNames.push(latitudeField);
+    fieldNames.push(longitudeField);
     return fieldNames;
 }
 

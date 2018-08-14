@@ -34,7 +34,9 @@ let event = {
         "format": "json", 
         "maxLon": "100", 
         "time": "12:02",
-        "fields": "city,delay,id,speed"
+        // "fields": "city,delay,id,speed,startlatitude",
+        // "includeCoordinates": "true"
+        "countOnly" : "true"
     }, 
     "pathParameters": <any>null, 
     "stageVariables": <any>null, 

@@ -3,7 +3,7 @@ import * as entities from '../../../shared-lib/src/entities'
 import moment = require("moment");
 import { getJamSnapshotRequestModel } from "../api-models/getJamSnapshotRequestModel";
 import { QueryResult } from 'pg';
-import { JamMappingSettings } from "./jamQueryResultMapper";
+import { JamMappingSettings } from "./jamQueryResult";
 
 export class getJamListSnapshotQueryResult
 {
@@ -11,13 +11,13 @@ export class getJamListSnapshotQueryResult
     timeframeReturned: entities.Timeframe;
     nextTimeframe: entities.Timeframe;
     previousTimeframe: entities.Timeframe;
+    resultCount: number;
 }
 
 export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResult) : getJamListSnapshotQueryResult
 {
     let result = new getJamListSnapshotQueryResult();
-    result.jams = [];
-
+    
     for(let row of dfResponse.rows)
     {
         if(!result.timeframeReturned)        
@@ -43,7 +43,6 @@ export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResul
         }
         
     }
-
     return result;
 }
 
@@ -224,14 +223,13 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
 }
 
 let fieldNamesDict : { [id: string] : string} = {
-    //lat/long are in a json blob. they're always returned from the jams table
     "city": "j.city",
     "delay" : "j.delay",
     "end_node" : "j.end_node",
     "id" : "j.id",
     "length" : "j.length",
     "level" : "j.level",
-    "pub_utc_date" : "j.pub_utc_date",
+    "jamStartTime" : "j.pub_millis",
     "road_type" : "j.road_type",
     "speed" : "j.speed",
     "speed_kmh" : "j.speed_kmh",
@@ -241,8 +239,8 @@ let fieldNamesDict : { [id: string] : string} = {
     "uuid" : "j.uuid",
 }
 
-let latitudeField = "latitude";
-let longitudeField = "longitude";
+let latitudeField = "startlatitude";
+let longitudeField = "startlongitude";
 let lineField = "line";
 
 export function getEscapedFieldNames(queryArgs: getJamSnapshotRequestModel) : string[]
@@ -281,5 +279,7 @@ export function getDefaultFieldList() : string[]
     {
         fieldNames.push(fieldNamesDict[key])
     }
+    fieldNames.push(latitudeField);
+    fieldNames.push(longitudeField);
     return fieldNames;
 }
