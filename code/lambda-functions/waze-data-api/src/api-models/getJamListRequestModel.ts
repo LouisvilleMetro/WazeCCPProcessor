@@ -55,7 +55,7 @@ export class getJamListRequestModel extends StandardListRequest<object> {
 
         //do the same for time
         if(!input.queryStringParameters["startTime"]){
-            this.startTime = moment().format('HH:mm');
+            this.startTime = "00:00:00"; //default to midnight
         }
         else{
             this.startTime = input.queryStringParameters["startTime"];
@@ -81,7 +81,7 @@ export class getJamListRequestModel extends StandardListRequest<object> {
 
         //do the same for time
         if(!input.queryStringParameters["endTime"]){
-            this.endTime = moment().format('HH:mm');
+            this.endTime = "23:59:59"; //default to 11:59 so we get the whole rest of the day
         }
         else{
             this.endTime = input.queryStringParameters["endTime"];
