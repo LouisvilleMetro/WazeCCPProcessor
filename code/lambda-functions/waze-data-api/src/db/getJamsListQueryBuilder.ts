@@ -14,10 +14,11 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
 
     if(args.countOnly === true)
     {
-        sql += "COUNT(1) ";
+        sql += "COUNT(1) AS count ";
     }
     else
     {   
+        sql += "COUNT(1) OVER() AS count, ";
         sql += escapedFields.dbFields.join(",");
     }
     
@@ -109,17 +110,21 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         sql += " AND jams.length <= $" + parameters.length;
     }
     
-    if(args.num)
+    if(!args.countOnly)
     {
-        //injection risk - try to make sure what we have here is numeric
-        sql += " LIMIT " + parseInt(args.num.toString());
+        if(args.num)
+        {
+            //injection risk - try to make sure what we have here is numeric
+            sql += " LIMIT " + parseInt(args.num.toString());
+        }
+
+        if(args.offset)
+        {
+            //injection risk - try to make sure what we have here is numeric
+            sql += " OFFSET " + parseInt(args.offset.toString());
+        }
     }
 
-    if(args.offset)
-    {
-        //injection risk - try to make sure what we have here is numeric
-        sql += " OFFSET " + parseInt(args.offset.toString());
-    }
 
     return {
         sql : sql,

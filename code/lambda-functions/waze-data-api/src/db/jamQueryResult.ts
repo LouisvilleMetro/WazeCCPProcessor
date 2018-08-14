@@ -5,9 +5,10 @@ import { StandardListRequest} from "../api-models/StandardListRequest"
 export class JamQueryResult {
     jams: entities.JamWithLine[];
     resultCount : number;
-
+    
     static fromQueryResponse(queryResponse: QueryResult, mappingSettings: JamMappingSettings, requestModel: StandardListRequest<object>) : JamQueryResult {
         let result = new JamQueryResult();
+        
         if(requestModel.countOnly)
         {
             if(queryResponse.rows.length > 0 && queryResponse.rows[0].count !== null && queryResponse.rows[0].count !== undefined)
@@ -18,9 +19,14 @@ export class JamQueryResult {
         else
         {
             result.jams = [];
-            result.resultCount = queryResponse.rows.length;
+            
             for(let row of queryResponse.rows)
             {
+                if(row.count)
+                {
+                    result.resultCount = parseInt(row.count);
+                }
+                
                 let jam: entities.JamWithLine = {
                     id : row.id || null,
                     uuid : row.uuid || null,

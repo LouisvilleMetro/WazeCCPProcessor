@@ -6,7 +6,9 @@ import { JamQueryResult } from "../db/jamQueryResult";
 export class getJamListResponseModel {
     resultCount: number;
     jams : JamModel[];
-
+    startDate: Date;
+    endDate: Date;
+    
     static fromJamQueryResult(entity : JamQueryResult) : getJamListResponseModel
     {
         let model = new getJamListResponseModel();

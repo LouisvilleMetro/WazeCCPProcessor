@@ -107,6 +107,7 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
     }
     else
     {
+        sql += "COUNT(1) OVER() AS count, ";
         sql += escapedFields.dbFields.join(",");
     }
     
@@ -197,20 +198,20 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
         sql += " AND jams.length <= $" + parameters.length;
     }
     
-    if(args.num)
+    if(!args.countOnly)
     {
-        //injection risk - try to make sure what we have here is numeric
-        sql += " LIMIT " + parseInt(args.num.toString());
-    }
+        if(args.num)
+        {
+            //injection risk - try to make sure what we have here is numeric
+            sql += " LIMIT " + parseInt(args.num.toString());
+        }
 
-    if(args.offset)
-    {
-        //injection risk - try to make sure what we have here is numeric
-        sql += " OFFSET " + parseInt(args.offset.toString());
+        if(args.offset)
+        {
+            //injection risk - try to make sure what we have here is numeric
+            sql += " OFFSET " + parseInt(args.offset.toString());
+        }
     }
-
-    console.debug("getJamListSnapshot Sql: %s", sql);
-    console.debug("getJamListSnapshot Parameters: %j", parameters);
 
     return {
         sql : sql,
