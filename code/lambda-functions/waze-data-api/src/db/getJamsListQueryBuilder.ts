@@ -19,10 +19,12 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
     else
     {   
         sql += "COUNT(1) OVER() AS count, ";
+        sql += "MIN(j.pub_millis) OVER() as startDate, ";
+        sql += "MAX(j.pub_millis) OVER() as endDate, ";
         sql += escapedFields.dbFields.join(",");
     }
     
-    sql += " FROM waze.jams jams" +
+    sql += " FROM waze.jams j" +
         " INNER JOIN "+
         " ( "+
             " SELECT C.jam_id "+
@@ -30,9 +32,9 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
             " WHERE C.longitude "+
             " BETWEEN $3 AND $4 "+
             " AND C.latitude BETWEEN $5 AND $6) "+
-        " AS coords ON coords.jam_id = jams.id "+
+        " AS coords ON coords.jam_id = j.id "+
     " WHERE " +
-    " jams.pub_utc_date BETWEEN $1 AND $2 ";
+    " j.pub_utc_date BETWEEN $1 AND $2 ";
     
 
     let parameters : any[] = [
@@ -51,7 +53,7 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
             .map(i => "$" + (i + parameters.length).toString());
         //now join them so we wind up with a csv list
         //I feel like there should be a better way to do this 
-        sql += " AND jams.level IN (" + p.join(",") + ")";
+        sql += " AND j.level IN (" + p.join(",") + ")";
         //javascript is such a consistent language!
         parameters = parameters.concat(args.levels);
     }
@@ -60,7 +62,7 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
     {
         var p = Array.from(Array(args.levels.length).keys())
             .map(i => "$" + (i + parameters.length).toString());
-        sql += " AND jams.road_type IN (" + p.join(",") + ")";
+        sql += " AND j.road_type IN (" + p.join(",") + ")";
         parameters = parameters.concat(args.roadTypes);
     }
 
@@ -68,46 +70,46 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
     {
         //this has to be a like. case-sensitivity depends on collation.
         parameters.push("%" + args.streetName + "%");
-        sql += " AND jams.street LIKE $" + parameters.length;
+        sql += " AND j.street LIKE $" + parameters.length;
     }
 
     //delay
     if(args.delayMin)
     {
         parameters.push(args.delayMin);
-        sql += " AND jams.delay >= $" + parameters.length;
+        sql += " AND j.delay >= $" + parameters.length;
     }
 
     if(args.delayMax)
     {
         parameters.push(args.delayMax);
-        sql += " AND jams.delay <= $" + parameters.length;
+        sql += " AND j.delay <= $" + parameters.length;
     }
 
     //speed
     if(args.speedMin)
     {
         parameters.push(args.speedMin);
-        sql += " AND jams.speed >= $" + parameters.length;
+        sql += " AND j.speed >= $" + parameters.length;
     }
 
     if(args.speedMax)
     {
         parameters.push(args.speedMax);
-        sql += " AND jams.speed <= $" + parameters.length;
+        sql += " AND j.speed <= $" + parameters.length;
     }
 
     //length
     if(args.lengthMin)
     {
         parameters.push(args.lengthMin);
-        sql += " AND jams.length >= $" + parameters.length;
+        sql += " AND j.length >= $" + parameters.length;
     }
 
     if(args.lengthMax)
     {
         parameters.push(args.lengthMax);
-        sql += " AND jams.length <= $" + parameters.length;
+        sql += " AND j.length <= $" + parameters.length;
     }
     
     if(!args.countOnly)
@@ -140,20 +142,20 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
 }
 
 let fieldNamesDict : { [id: string] : string} = {
-    "city": "jams.city",
-    "delay" : "jams.delay",
-    "end_node" : "jams.end_node",
-    "id" : "jams.id",
-    "length" : "jams.length",
-    "level" : "jams.level",
-    "jamStartTime" : "jams.pub_millis",
-    "road_type" : "jams.road_type",
-    "speed" : "jams.speed",
-    "speed_kmh" : "jams.speed_kmh",
-    "start_node" : "jams.start_node",
-    "street" : "jams.street",
-    "turn_type" : "jams.turn_type",
-    "uuid" : "jams.uuid",
+    "city": "j.city",
+    "delay" : "j.delay",
+    "end_node" : "j.end_node",
+    "id" : "j.id",
+    "length" : "j.length",
+    "level" : "j.level",
+    "jamStartTime" : "j.pub_millis",
+    "road_type" : "j.road_type",
+    "speed" : "j.speed",
+    "speed_kmh" : "j.speed_kmh",
+    "start_node" : "j.start_node",
+    "street" : "j.street",
+    "turn_type" : "j.turn_type",
+    "uuid" : "j.uuid",
     
 }
 

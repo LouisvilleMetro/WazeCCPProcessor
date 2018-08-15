@@ -5,7 +5,8 @@ import { StandardListRequest} from "../api-models/StandardListRequest"
 export class JamQueryResult {
     jams: entities.JamWithLine[];
     resultCount : number;
-    
+    startDate: number;
+    endDate: number;
     static fromQueryResponse(queryResponse: QueryResult, mappingSettings: JamMappingSettings, requestModel: StandardListRequest<object>) : JamQueryResult {
         let result = new JamQueryResult();
         
@@ -25,6 +26,14 @@ export class JamQueryResult {
                 if(row.count)
                 {
                     result.resultCount = parseInt(row.count);
+                }
+                if(row.startdate)
+                {
+                    result.startDate = parseInt(row.startdate);
+                }
+                if(row.enddate)
+                {
+                    result.endDate = parseInt(row.enddate);
                 }
                 
                 let jam: entities.JamWithLine = {

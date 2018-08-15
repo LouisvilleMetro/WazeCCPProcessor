@@ -6,13 +6,15 @@ import { JamQueryResult } from "../db/jamQueryResult";
 export class getJamListResponseModel {
     resultCount: number;
     jams : JamModel[];
-    startDate: Date;
-    endDate: Date;
+    startDate: number;
+    endDate: number;
     
     static fromJamQueryResult(entity : JamQueryResult) : getJamListResponseModel
     {
         let model = new getJamListResponseModel();
         model.resultCount = entity.resultCount;
+        model.startDate = entity.startDate;
+        model.endDate = entity.endDate;
         if(entity.jams)
         {
             model.jams = JamModel.fromArrayOfJamWithLine(entity.jams);
