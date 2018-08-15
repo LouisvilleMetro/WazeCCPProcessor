@@ -198,6 +198,8 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
         sql += " AND jams.length <= $" + parameters.length;
     }
     
+    sql += " ORDER BY j.pub_millis, j.id ASC";
+
     if(!args.countOnly)
     {
         if(args.num)
@@ -212,9 +214,9 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
             sql += " OFFSET " + parseInt(args.offset.toString());
         }
     }
-
+    
     return {
-        sql : sql,
+        sql : sql + ";",
         parameterList : parameters,
         mappingSettings: new JamMappingSettings(
             (!args.countOnly && args.includeCoordinates),

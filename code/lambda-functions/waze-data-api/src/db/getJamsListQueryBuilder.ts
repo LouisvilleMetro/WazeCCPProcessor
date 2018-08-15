@@ -112,6 +112,8 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         sql += " AND j.length <= $" + parameters.length;
     }
     
+    sql += " ORDER BY j.pub_millis, j.id ASC";
+
     if(!args.countOnly)
     {
         if(args.num)
@@ -129,7 +131,7 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
 
 
     return {
-        sql : sql,
+        sql : sql + ";",
         parameterList : parameters,
         mappingSettings: new JamMappingSettings(
             (!args.countOnly && args.includeCoordinates),
