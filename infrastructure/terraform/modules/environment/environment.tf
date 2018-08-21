@@ -8,17 +8,17 @@ provider "aws" {
 ###############################################
 
 # create a cloudwatch event that will run on a schedule
-resource "aws_cloudwatch_event_rule" "data_retrieval_timer" { 
+resource "aws_cloudwatch_event_rule" "data_retrieval_timer" {
     name = "${var.object_name_prefix}-data-retrieval-timer"
     description = "Cron job to get data from Waze periodically"
     schedule_expression = "rate(2 minutes)"
 }
 
 # setup a target for the event
-resource "aws_cloudwatch_event_target" "data_retrieval_timer_target" { 
+resource "aws_cloudwatch_event_target" "data_retrieval_timer_target" {
     # make this depend on the DB being up, so that we don't start grabbing files before the database even exists
     # there's still a required step of running the sql schema script, but this will at least limit errors
-    depends_on = ["aws_rds_cluster_instance.waze_database_instances"] 
+    depends_on = ["aws_rds_cluster_instance.waze_database_instances"]
     rule = "${aws_cloudwatch_event_rule.data_retrieval_timer.name}"
     arn  = "${aws_lambda_function.waze_data_retrieval_function.arn}"
 }
@@ -41,7 +41,7 @@ resource "aws_cloudwatch_metric_alarm" "processing_dead_letter_queue_alarm" {
     evaluation_periods  = "1"
     metric_name         = "NumberOfMessagesSent"
     namespace           = "AWS/SQS"
-    
+
     dimensions {
         QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
     }
@@ -344,7 +344,7 @@ resource "aws_iam_policy" "data_retrieval_resource_access" {
           "${aws_lambda_function.waze_data_alerts_processing_function.arn}",
           "${aws_lambda_function.waze_data_jams_processing_function.arn}",
           "${aws_lambda_function.waze_data_irregularities_processing_function.arn}"
-      ] 
+      ]
     }
   ]
 }
@@ -371,6 +371,7 @@ resource "aws_iam_role_policy_attachment" "data_retrieval_lambda_basic_logging_r
 # setup data retrieve lambda
 resource "aws_lambda_function" "waze_data_retrieval_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-download.zip"
+    source_code_hash = "${base64sha256(file("${var.lambda_artifacts_path}/waze-data-download.zip"))}"
     function_name = "${var.object_name_prefix}-waze-data-retrieval"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -393,6 +394,7 @@ resource "aws_lambda_function" "waze_data_retrieval_function"{
 # setup data processing lambda
 resource "aws_lambda_function" "waze_data_processing_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
+    source_code_hash = "${base64sha256(file("${var.lambda_artifacts_path}/waze-data-process.zip"))}"
     function_name = "${var.object_name_prefix}-waze-data-processing"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -427,6 +429,7 @@ resource "aws_lambda_function" "waze_data_processing_function"{
 # setup alert processing lambda
 resource "aws_lambda_function" "waze_data_alerts_processing_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
+    source_code_hash = "${base64sha256(file("${var.lambda_artifacts_path}/waze-data-process.zip"))}"
     function_name = "${var.object_name_prefix}-waze-data-alerts-processing"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -452,6 +455,7 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
 # setup jams processing lambda
 resource "aws_lambda_function" "waze_data_jams_processing_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
+    source_code_hash = "${base64sha256(file("${var.lambda_artifacts_path}/waze-data-process.zip"))}"
     function_name = "${var.object_name_prefix}-waze-data-jams-processing"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"
@@ -477,6 +481,7 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
 # setup irregularities processing lambda
 resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
     filename = "${var.lambda_artifacts_path}/waze-data-process.zip"
+    source_code_hash = "${base64sha256(file("${var.lambda_artifacts_path}/waze-data-process.zip"))}"
     function_name = "${var.object_name_prefix}-waze-data-irregularities-processing"
     runtime = "nodejs8.10"
     role = "${aws_iam_role.data_retrieval_execution_role.arn}"

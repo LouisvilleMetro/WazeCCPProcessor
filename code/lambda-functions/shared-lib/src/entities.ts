@@ -56,12 +56,12 @@ export abstract class JamBase<TLine> {
     type: string;
     turn_line: string;
     datafile_id: number;
-    startLongitude: number;
-    startLatitude: number;
+    startLongitude?: number;
+    startLatitude?: number;
 }
 
 export class Jam extends JamBase<string> {
-    
+
 }
 
 export class JamWithLine extends JamBase<Array<Point>> {
