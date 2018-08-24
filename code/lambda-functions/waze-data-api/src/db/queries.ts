@@ -1,4 +1,4 @@
-import connectionPool = require('../../../shared-lib/src/connectionPool') 
+import connectionPool = require('../../../shared-lib/src/connectionPool')
 import util = require('util')
 import * as entities from '../../../shared-lib/src/entities'
 import getJamsListQueryBuilder = require("./getJamsListQueryBuilder");
@@ -20,12 +20,12 @@ export async function getJamListSnapshotQuery(requestModel: getJamSnapshotReques
 {
     let dataFileQuery = getJamsSnapshotQueryBuilder.buildDataFileSqlAndParameterList(requestModel);
     let dataFileResponse = await connectionPool.getPool().query(dataFileQuery.sql, dataFileQuery.parameterList);
-    
+
     if(dataFileResponse.rowCount === 0){
         //nothing found, return ...what?
         return new getJamsSnapshotQueryBuilder.getJamListSnapshotQueryResult();
     }
-    
+
     let getJamsListSnapshotResult = getJamsSnapshotQueryBuilder.mapSnapshotResultFromDataFileQueryResult(dataFileResponse);
 
     let row = dataFileResponse.rows[0];
@@ -40,8 +40,8 @@ export async function getJamListSnapshotQuery(requestModel: getJamSnapshotReques
         }
         getJamsListSnapshotResult.resultCount = jamResult.resultCount;
     }
-    
-    return getJamsListSnapshotResult;    
+
+    return getJamsListSnapshotResult;
 }
 
 

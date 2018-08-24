@@ -9,7 +9,7 @@ export class JamQueryResult {
     endDate: number;
     static fromQueryResponse(queryResponse: QueryResult, mappingSettings: JamMappingSettings, requestModel: StandardListRequest<object>) : JamQueryResult {
         let result = new JamQueryResult();
-        
+
         if(requestModel.countOnly)
         {
             if(queryResponse.rows.length > 0 && queryResponse.rows[0].count !== null && queryResponse.rows[0].count !== undefined)
@@ -20,7 +20,10 @@ export class JamQueryResult {
         else
         {
             result.jams = [];
-            
+
+            //ALWAYS SET THE RESULT COUNT!
+            result.resultCount = 0;
+
             for(let row of queryResponse.rows)
             {
                 if(row.count)
@@ -35,7 +38,7 @@ export class JamQueryResult {
                 {
                     result.endDate = parseInt(row.enddate);
                 }
-                
+
                 let jam: entities.JamWithLine = {
                     id : row.id || null,
                     uuid : row.uuid || null,
@@ -77,13 +80,13 @@ export class JamQueryResult {
                     {
                         jam.line = row.line;
                     }
-                    
+
                 }
                 result.jams.push(jam);
             }
         }
-        
-        
+
+
         return result;
     }
 }
@@ -94,7 +97,7 @@ export class JamMappingSettings {
         public includeLongitude: boolean,
         public includeLatitude: boolean)
     {
-        
+
     }
 }
 

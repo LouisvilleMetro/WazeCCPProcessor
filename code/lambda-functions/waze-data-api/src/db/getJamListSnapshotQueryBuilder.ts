@@ -1,4 +1,4 @@
-import connectionPool = require('../../../shared-lib/src/connectionPool') 
+import connectionPool = require('../../../shared-lib/src/connectionPool')
 import * as entities from '../../../shared-lib/src/entities'
 import moment = require("moment");
 import { getJamSnapshotRequestModel } from "../api-models/getJamSnapshotRequestModel";
@@ -18,10 +18,10 @@ export class getJamListSnapshotQueryResult
 export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResult) : getJamListSnapshotQueryResult
 {
     let result = new getJamListSnapshotQueryResult();
-    
+
     for(let row of dfResponse.rows)
     {
-        if(!result.timeframeReturned)        
+        if(!result.timeframeReturned)
         {
             result.timeframeReturned = {
                 startTimeMillis : <number>row.start_time_millis,
@@ -42,7 +42,7 @@ export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResul
                 endTimeMillis : <number>row.prev_end_time_millis
             };
         }
-        
+
     }
     return result;
 }
@@ -110,7 +110,7 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
         sql += "COUNT(1) OVER() AS count, ";
         sql += escapedFields.dbFields.join(",");
     }
-    
+
     sql += " FROM waze.jams j"+
     " INNER JOIN ("+
         " SELECT"+
@@ -122,14 +122,14 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
             " AND C.latitude BETWEEN $4 AND $5"+
         ") AS coords ON coords.jam_id = j.id"+
     " WHERE"+
-    " j.datafile_id = $1"; 
-    
+    " j.datafile_id = $1";
+
     let parameters : any[] = [
         dataFileId,
-        args.minLat,
-        args.maxLat,
         args.minLon,
-        args.maxLon];
+        args.maxLon,
+        args.minLat,
+        args.maxLat];
 
     if(args.levels && args.levels.length > 0)
     {
@@ -138,12 +138,12 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
         var p = Array.from(Array(args.levels.length).keys())
             .map(i => "$" + (i + parameters.length).toString());
         //now join them so we wind up with a csv list
-        //I feel like there should be a better way to do this 
+        //I feel like there should be a better way to do this
         sql += " AND jams.level IN (" + p.join(",") + ")";
         //javascript is such a consistent language!
         parameters = parameters.concat(args.levels);
     }
-    
+
     if(args.roadTypes && args.roadTypes.length > 0)
     {
         var p = Array.from(Array(args.levels.length).keys())
@@ -197,7 +197,7 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
         parameters.push(args.lengthMax);
         sql += " AND jams.length <= $" + parameters.length;
     }
-    
+
     sql += " ORDER BY j.pub_millis, j.id ASC";
 
     if(!args.countOnly)
@@ -214,7 +214,7 @@ export function buildJamSqlAndParameterList(args: getJamSnapshotRequestModel, da
             sql += " OFFSET " + parseInt(args.offset.toString());
         }
     }
-    
+
     return {
         sql : sql + ";",
         parameterList : parameters,

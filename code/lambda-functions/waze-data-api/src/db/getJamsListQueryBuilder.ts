@@ -5,7 +5,7 @@ import * as entities from '../../../shared-lib/src/entities'
 import { JamMappingSettings } from "./jamQueryResult";
 import { JamFieldNames } from "./JamFieldNames";
 
-export function buildSqlAndParameterList(args : getJamListRequestModel) 
+export function buildSqlAndParameterList(args : getJamListRequestModel)
     : { sql : string; parameterList: any[]; mappingSettings: JamMappingSettings  }
 {
     let sql = "SELECT ";
@@ -17,13 +17,13 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         sql += "COUNT(1) AS count ";
     }
     else
-    {   
+    {
         sql += "COUNT(1) OVER() AS count, ";
         sql += "MIN(j.pub_millis) OVER() as startDate, ";
         sql += "MAX(j.pub_millis) OVER() as endDate, ";
         sql += escapedFields.dbFields.join(",");
     }
-    
+
     sql += " FROM waze.jams j" +
         " INNER JOIN "+
         " ( "+
@@ -35,15 +35,16 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         " AS coords ON coords.jam_id = j.id "+
     " WHERE " +
     " j.pub_utc_date BETWEEN $1 AND $2 ";
-    
+
 
     let parameters : any[] = [
-        args.getStartDateTime(), 
+        args.getStartDateTime(),
         args.getEndDateTime(),
-        args.minLat,
-        args.maxLat,
         args.minLon,
-        args.maxLon];
+        args.maxLon,
+        args.minLat,
+        args.maxLat
+        ];
 
     if(args.levels && args.levels.length > 0)
     {
@@ -52,12 +53,12 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         var p = Array.from(Array(args.levels.length).keys())
             .map(i => "$" + (i + parameters.length).toString());
         //now join them so we wind up with a csv list
-        //I feel like there should be a better way to do this 
+        //I feel like there should be a better way to do this
         sql += " AND j.level IN (" + p.join(",") + ")";
         //javascript is such a consistent language!
         parameters = parameters.concat(args.levels);
     }
-    
+
     if(args.roadTypes && args.roadTypes.length > 0)
     {
         var p = Array.from(Array(args.levels.length).keys())
@@ -111,7 +112,7 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         parameters.push(args.lengthMax);
         sql += " AND j.length <= $" + parameters.length;
     }
-    
+
     sql += " ORDER BY j.pub_millis, j.id ASC";
 
     if(!args.countOnly)
@@ -140,7 +141,7 @@ export function buildSqlAndParameterList(args : getJamListRequestModel)
         )
     };
 
-    
+
 }
 
 let fieldNamesDict : { [id: string] : string} = {
@@ -158,6 +159,6 @@ let fieldNamesDict : { [id: string] : string} = {
     "street" : "j.street",
     "turn_type" : "j.turn_type",
     "uuid" : "j.uuid",
-    
+
 }
 
