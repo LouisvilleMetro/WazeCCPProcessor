@@ -4,9 +4,9 @@ Takes [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a clo
 
 ## Overview
 
-Louisville is creating an automated cloud processing solution that can be replicated by any CCP Partner, with the help of other govs, partners, and sponsors.
+Louisville has created an automated cloud processing solution that can be replicated by any CCP Partner, with the [help of other govs, partners, and sponsors](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki/Waze-CCP-Collaborative-Processor).
 
-You grab this [Terraform.io](http://www.terraform.io) code and deploy the infrastructure stack (currently AWS but cloud agnostic).
+You grab this [Terraform.io](http://www.terraform.io) code and deploy the infrastructure-as-code stack (currently AWS but cloud agnostic).
 
 You enter your CCP data feed URL as a parameter.
 
@@ -28,9 +28,9 @@ We have an end-to-end data processor and database working that you can deploy.  
 
 ## Finished Result
 
-This creates an infrastructure stack which has pings your custom Waze CCP data feed every 2 minutes and save the JSON to a new bucket, which then gets processed into the relational database.  There is error handling and also notification options for when things go right or wrong.  
+This creates an infrastructure stack which pings your custom Waze CCP data feed every 2 minutes and saves the JSON to a new bucket, which then gets processed into the relational database.  There is error handling and also notification options for when things go right or wrong.  
 
-Here's what was created:
+Here's what is created:
 
 ![Waze Current Architecture](docs/Current%20Architecture.png "Waze Current Architecture")
 
@@ -44,7 +44,7 @@ You can also dump any previously collected historic JSON files into your bucket 
 
 ## Costs
 
-This config stands up infrastructure that is mostly cheap/free (depending on usage), but the database itself is pretty powerful and will result in monthly charges in excess of $200 (as of this writing).  We are working on ways to reduce the costs and you can help out on this [issue](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues/32).
+This config stands up infrastructure that is pretty inexpensive (and is about the same for any sized city). The database itself is the main cost (95+%) and will result in monthly charges under $200.  We are working on ways to reduce the costs and you can help out on this [issue](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues/32).
 
 ## Current Plans
 
@@ -63,4 +63,7 @@ If you'd like a little more background on Louisville and what our city has been 
 1. [Louisville Waze Internal Hackathon Recap](https://medium.com/louisville-metro-opi2/waze-louisvilles-first-internal-hackathon-647363a85392)
 2. [Harvard Civic Analytics Network Presentation - Slides](https://docs.google.com/presentation/d/1esPVvhuIRjD199rN8aimK_XcmCt0pJOkjEIyCMhGKks/)
 3. [Waze April 2018 Monthly Call - Slides](https://docs.google.com/presentation/d/1loAV4BDAUyXdrn44QoLmYiwZdLmL59C4jvJGlZ1a-AY/)
-4. [Open Government Coalition](https://www.govintheopen.com/)
+4. [Open Government Coalition](https://www.govintheopen.com/) Supporting Framework
+5. [Run Free Traffic Studies Using This Tool](https://medium.com/louisville-metro-opi2/how-we-do-free-traffic-studies-with-waze-data-and-how-you-can-too-a550b0728f65)
+
+
