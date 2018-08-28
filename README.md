@@ -1,6 +1,6 @@
 # WazeCCPProcessor
 
-Takes [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database for querying, analysis, API hooks, and mapping.
+Takes the [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database for querying, analysis, API hooks, and mapping.
 
 ## Overview
 
