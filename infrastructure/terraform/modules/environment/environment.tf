@@ -1,7 +1,13 @@
 # setup the AWS provider
 provider "aws" {
-    region = "${var.default_resource_region}"
+  region = "${var.default_resource_region}"
 }
+
+# load up the current app version module
+module "current_app_version" {
+  source      = "../current-app-version"
+}
+
 
 ###############################################
 # Cloudwatch
@@ -9,89 +15,94 @@ provider "aws" {
 
 # create a cloudwatch event that will run on a schedule
 resource "aws_cloudwatch_event_rule" "data_retrieval_timer" {
-    name = "${var.object_name_prefix}-data-retrieval-timer"
-    description = "Cron job to get data from Waze periodically"
-    schedule_expression = "rate(2 minutes)"
+  name                = "${var.object_name_prefix}-data-retrieval-timer"
+  description         = "Cron job to get data from Waze periodically"
+  schedule_expression = "rate(2 minutes)"
 }
 
 # setup a target for the event
 resource "aws_cloudwatch_event_target" "data_retrieval_timer_target" {
-    # make this depend on the DB being up, so that we don't start grabbing files before the database even exists
-    # there's still a required step of running the sql schema script, but this will at least limit errors
-    depends_on = ["aws_rds_cluster_instance.waze_database_instances"]
-    rule = "${aws_cloudwatch_event_rule.data_retrieval_timer.name}"
-    arn  = "${aws_lambda_function.waze_data_retrieval_function.arn}"
+  # make this depend on the DB being up, so that we don't start grabbing files before the database even exists
+  # there's still a required step of running the sql schema script, but this will at least limit errors
+  depends_on = ["aws_rds_cluster_instance.waze_database_instances"]
+
+  rule = "${aws_cloudwatch_event_rule.data_retrieval_timer.name}"
+  arn  = "${aws_lambda_function.waze_data_retrieval_function.arn}"
 }
 
 # give permission for our lambda to be triggered by cloudwatch event
 resource "aws_lambda_permission" "allow_data_retrieval_timer_target_lambda" {
-    statement_id  = "AllowExecutionFromCloudwatch"
-    action        = "lambda:InvokeFunction"
-    function_name = "${aws_lambda_function.waze_data_retrieval_function.function_name}"
-    principal     = "events.amazonaws.com"
-    source_arn    = "${aws_cloudwatch_event_rule.data_retrieval_timer.arn}"
+  statement_id  = "AllowExecutionFromCloudwatch"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.waze_data_retrieval_function.function_name}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.data_retrieval_timer.arn}"
 }
 
 # create a cloudwatch alarm to alert on the dead letter queue receiving messages
 resource "aws_cloudwatch_metric_alarm" "processing_dead_letter_queue_alarm" {
-    # we'll only create this alarm if the associated var is true
-    count = "${var.enable_data_processor_dlq_sns_topic == "true" ? 1 : 0}"
-    alarm_name                = "${var.object_name_prefix}-waze-data-processing-dlq-receive-alarm"
-    comparison_operator = "GreaterThanThreshold"
-    evaluation_periods  = "1"
-    metric_name         = "NumberOfMessagesSent"
-    namespace           = "AWS/SQS"
+  # we'll only create this alarm if the associated var is true
+  count               = "${var.enable_data_processor_dlq_sns_topic == "true" ? 1 : 0}"
+  alarm_name          = "${var.object_name_prefix}-waze-data-processing-dlq-receive-alarm"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "NumberOfMessagesSent"
+  namespace           = "AWS/SQS"
 
-    dimensions {
-        QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
-    }
+  dimensions {
+    QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
+  }
 
-    period             = "300"
-    datapoints_to_alarm= "1"
-    evaluation_periods = "2"
-    statistic          = "Sum"
-    threshold          = "0"
-    alarm_description  = "This alarm monitors messages being added to the intake dead letter queue"
-    alarm_actions      = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
-    treat_missing_data = "missing"
+  period              = "300"
+  datapoints_to_alarm = "1"
+  evaluation_periods  = "2"
+  statistic           = "Sum"
+  threshold           = "0"
+  alarm_description   = "This alarm monitors messages being added to the intake dead letter queue"
+  alarm_actions       = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
+  treat_missing_data  = "missing"
 }
 
 # create a cloudwatch alarm to alert on the dead letter queue if items are in it for 24 hours
 resource "aws_cloudwatch_metric_alarm" "processing_dead_letter_queue_has_items_alarm" {
-    # we'll only create this alarm if the associated var is true
-    count = "${var.enable_data_processor_dlq_sns_topic == "true" ? 1 : 0}"
-    alarm_name                = "${var.object_name_prefix}-waze-data-processing-dlq-messages-alarm"
-    comparison_operator       = "GreaterThanOrEqualToThreshold"
-    evaluation_periods        = "1"
-    metric_name               = "ApproximateNumberOfMessagesVisible"
-    namespace                 = "AWS/SQS"
-    dimensions {
-        QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
-    }
-    period                    = "86400" # 24 hours
-    statistic                 = "Minimum"
-    threshold                 = "1"
-    alarm_description         = "This metric monitors sqs messages sitting in the dead letter queue"
-    alarm_actions             = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
-    treat_missing_data        = "notBreaching"
+  # we'll only create this alarm if the associated var is true
+  count               = "${var.enable_data_processor_dlq_sns_topic == "true" ? 1 : 0}"
+  alarm_name          = "${var.object_name_prefix}-waze-data-processing-dlq-messages-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+
+  dimensions {
+    QueueName = "${aws_sqs_queue.data_processing_dead_letter_queue.name}"
+  }
+
+  period             = "86400"                                                              # 24 hours
+  statistic          = "Minimum"
+  threshold          = "1"
+  alarm_description  = "This metric monitors sqs messages sitting in the dead letter queue"
+  alarm_actions      = ["${aws_sns_topic.data_processing_dlq_sns_topic.arn}"]
+  treat_missing_data = "notBreaching"
 }
 
 # create a cloudwatch alarm to monitor the work queue
 resource "aws_cloudwatch_metric_alarm" "data_processing_queue_alarm" {
-  alarm_name                = "${var.object_name_prefix}-waze-data-processing-work-queue-alarm"
-  comparison_operator       = "GreaterThanOrEqualToThreshold"
-  evaluation_periods        = "1"
-  metric_name               = "ApproximateNumberOfMessagesVisible"
-  namespace                 = "AWS/SQS"
+  alarm_name          = "${var.object_name_prefix}-waze-data-processing-work-queue-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+
   dimensions {
     QueueName = "${aws_sqs_queue.data_processing_queue.name}"
   }
-  period                    = "300"
-  statistic                 = "Maximum"
-  threshold                 = "1"
-  alarm_description         = "This metric monitors sqs message visibility"
-  alarm_actions             = ["${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"]
-  treat_missing_data        = "ignore"
+
+  period             = "300"
+  statistic          = "Maximum"
+  threshold          = "1"
+  alarm_description  = "This metric monitors sqs message visibility"
+  alarm_actions      = ["${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"]
+  treat_missing_data = "ignore"
 }
 
 ###############################################
@@ -102,9 +113,10 @@ resource "aws_cloudwatch_metric_alarm" "data_processing_queue_alarm" {
 # since bucket names have to be globally unique, and we're sharing this script,
 # we'll inject the account id into the name
 data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket" "waze_data_incoming_bucket" {
-    bucket = "${var.object_name_prefix}-waze-data-incoming-${data.aws_caller_identity.current.account_id}"
-    force_destroy = "${var.empty_s3_buckets_before_destroy}"
+  bucket        = "${var.object_name_prefix}-waze-data-incoming-${data.aws_caller_identity.current.account_id}"
+  force_destroy = "${var.empty_s3_buckets_before_destroy}"
 }
 
 # setup a notification on the incoming bucket to trigger SNS
@@ -112,15 +124,15 @@ resource "aws_s3_bucket_notification" "waze_data_incoming_bucket_notification" {
   bucket = "${aws_s3_bucket.waze_data_incoming_bucket.id}"
 
   topic {
-    topic_arn     = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
-    events        = ["s3:ObjectCreated:*"]
+    topic_arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+    events    = ["s3:ObjectCreated:*"]
   }
 }
 
 # create a bucket to store the files after processing is done
 resource "aws_s3_bucket" "waze_data_processed_bucket" {
-    bucket = "${var.object_name_prefix}-waze-data-processed-${data.aws_caller_identity.current.account_id}"
-    force_destroy = "${var.empty_s3_buckets_before_destroy}"
+  bucket        = "${var.object_name_prefix}-waze-data-processed-${data.aws_caller_identity.current.account_id}"
+  force_destroy = "${var.empty_s3_buckets_before_destroy}"
 }
 
 ###############################################
@@ -129,20 +141,21 @@ resource "aws_s3_bucket" "waze_data_processed_bucket" {
 
 # create the SQS queue that will track new data
 resource "aws_sqs_queue" "data_processing_queue" {
-    name = "${var.object_name_prefix}-waze-data-processing"
-    delay_seconds = "0"
-    receive_wait_time_seconds = "20"
-    visibility_timeout_seconds = "360"
-    redrive_policy = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.data_processing_dead_letter_queue.arn}\",\"maxReceiveCount\":8}"
-    tags {
-        Environment = "${var.environment}"
-        Scripted = "true"
-    }
+  name                       = "${var.object_name_prefix}-waze-data-processing"
+  delay_seconds              = "0"
+  receive_wait_time_seconds  = "20"
+  visibility_timeout_seconds = "360"
+  redrive_policy             = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.data_processing_dead_letter_queue.arn}\",\"maxReceiveCount\":8}"
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
 }
 
 # create a policy that will allow sns to push messages to the queue
 resource "aws_sqs_queue_policy" "data_processing_queue_policy" {
-    queue_url = "${aws_sqs_queue.data_processing_queue.id}"
+  queue_url = "${aws_sqs_queue.data_processing_queue.id}"
 
   policy = <<POLICY
 {
@@ -167,15 +180,16 @@ POLICY
 
 # create the dead letter queue for our main queue
 resource "aws_sqs_queue" "data_processing_dead_letter_queue" {
-    name = "${var.object_name_prefix}-waze-data-processing-dlq"
-    delay_seconds = "0"
-    receive_wait_time_seconds = "0"
-    visibility_timeout_seconds = "30"
-    message_retention_seconds = "1209600" # 14 days
-    tags {
-        Environment = "${var.environment}"
-        Scripted = "true"
-    }
+  name                       = "${var.object_name_prefix}-waze-data-processing-dlq"
+  delay_seconds              = "0"
+  receive_wait_time_seconds  = "0"
+  visibility_timeout_seconds = "30"
+  message_retention_seconds  = "1209600"                                            # 14 days
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
 }
 
 ###############################################
@@ -184,16 +198,15 @@ resource "aws_sqs_queue" "data_processing_dead_letter_queue" {
 
 # create a topic for the dead letter queue notification
 resource "aws_sns_topic" "data_processing_dlq_sns_topic" {
-    name = "${var.object_name_prefix}-waze-data-processing-dlq-notification"
-    display_name = "${var.object_name_prefix}-waze-data-processing-dlq-notification"
+  name         = "${var.object_name_prefix}-waze-data-processing-dlq-notification"
+  display_name = "${var.object_name_prefix}-waze-data-processing-dlq-notification"
 }
 
 # create a topic for the data retrieved notification
 # this will be triggered by S3, so it needs some setup
 resource "aws_sns_topic" "data_retrieved_sns_topic" {
-    name = "${var.object_name_prefix}-waze-data-retrieved-notification"
-    display_name = "${var.object_name_prefix}-waze-data-retrieved-notification"
-
+  name         = "${var.object_name_prefix}-waze-data-retrieved-notification"
+  display_name = "${var.object_name_prefix}-waze-data-retrieved-notification"
 }
 
 resource "aws_sns_topic_policy" "data_retrieved_sns_allow_s3_publish_policy" {
@@ -217,16 +230,16 @@ POLICY
 
 # add subscription to notify SQS when message published to topic
 resource "aws_sns_topic_subscription" "data_retrieved_sqs_subscription" {
-    topic_arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
-    protocol = "sqs"
-    endpoint = "${aws_sqs_queue.data_processing_queue.arn}"
+  topic_arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+  protocol  = "sqs"
+  endpoint  = "${aws_sqs_queue.data_processing_queue.arn}"
 }
 
 # add subscription to notify lambda when message published to topic
 resource "aws_sns_topic_subscription" "data_retrieved_lambda_subscription" {
-    topic_arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
-    protocol = "lambda"
-    endpoint = "${aws_lambda_function.waze_data_processing_function.arn}"
+  topic_arn = "${aws_sns_topic.data_retrieved_sns_topic.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.waze_data_processing_function.arn}"
 }
 
 # have to tell lambda that sns can trigger it
@@ -240,21 +253,21 @@ resource "aws_lambda_permission" "allow_sns_data_retrieved_topic_trigger_process
 
 # create a topic for the data processed notification
 resource "aws_sns_topic" "data_processed_sns_topic" {
-    name = "${var.object_name_prefix}-waze-data-processed-notification"
-    display_name = "${var.object_name_prefix}-waze-data-processed-notification"
+  name         = "${var.object_name_prefix}-waze-data-processed-notification"
+  display_name = "${var.object_name_prefix}-waze-data-processed-notification"
 }
 
 # also need a topic that we'll use to trigger the processor lambda when items are in the queue
 resource "aws_sns_topic" "data_in_queue_alarm_sns_topic" {
-    name = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
-    display_name = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
+  name         = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
+  display_name = "${var.object_name_prefix}-waze-data-queue-alarm-topic"
 }
 
 # add a subscription so sns knows to notify lambda
 resource "aws_sns_topic_subscription" "data_processor_starter_trigger" {
-    topic_arn = "${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"
-    protocol = "lambda"
-    endpoint = "${aws_lambda_function.waze_data_processing_function.arn}"
+  topic_arn = "${aws_sns_topic.data_in_queue_alarm_sns_topic.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.waze_data_processing_function.arn}"
 }
 
 # have to tell lambda that sns can trigger it
@@ -272,8 +285,9 @@ resource "aws_lambda_permission" "allow_sns_trigger_processor_lambda" {
 
 # create a service role for the data retriever lambda function
 resource "aws_iam_role" "data_retrieval_execution_role" {
-    name = "${var.object_name_prefix}-data-retrieval-execution-role"
-    assume_role_policy = <<POLICY
+  name = "${var.object_name_prefix}-data-retrieval-execution-role"
+
+  assume_role_policy = <<POLICY
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -294,6 +308,7 @@ POLICY
 # create a policy to allow access to the data bucket, the queue, and execution of the data processor
 resource "aws_iam_policy" "data_retrieval_resource_access" {
   name = "${var.object_name_prefix}-data-and-queue-access-policy"
+
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -353,16 +368,15 @@ EOF
 
 # attach the policy to the lambda role
 resource "aws_iam_role_policy_attachment" "data_retrieval_execution_role_resource_access_attachment" {
-    role       = "${aws_iam_role.data_retrieval_execution_role.name}"
-    policy_arn = "${aws_iam_policy.data_retrieval_resource_access.arn}"
+  role       = "${aws_iam_role.data_retrieval_execution_role.name}"
+  policy_arn = "${aws_iam_policy.data_retrieval_resource_access.arn}"
 }
 
 # also need to attach the lambda basic role, so it can do useful things like logging
 resource "aws_iam_role_policy_attachment" "data_retrieval_lambda_basic_logging_role_policy_attachment" {
-    role       = "${aws_iam_role.data_retrieval_execution_role.name}"
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role       = "${aws_iam_role.data_retrieval_execution_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
-
 
 ################################################
 # Lambdas
@@ -385,10 +399,11 @@ resource "aws_lambda_function" "waze_data_retrieval_function"{
             SQSURL = "${aws_sqs_queue.data_processing_queue.id}"
         }
     }
-    tags {
-        Environment = "${var.environment}"
-        Scripted = "true"
-    }
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
 }
 
 # setup data processing lambda
@@ -420,10 +435,11 @@ resource "aws_lambda_function" "waze_data_processing_function"{
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
-    tags {
-        Environment = "${var.environment}"
-        Scripted = "true"
-    }
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
 }
 
 # setup alert processing lambda
@@ -446,10 +462,11 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function"{
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
-    tags {
-        Environment = "${var.environment}"
-        Scripted = "true"
-    }
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
 }
 
 # setup jams processing lambda
@@ -472,10 +489,11 @@ resource "aws_lambda_function" "waze_data_jams_processing_function"{
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
-    tags {
-        Environment = "${var.environment}"
-        Scripted = "true"
-    }
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
 }
 
 # setup irregularities processing lambda
@@ -498,10 +516,51 @@ resource "aws_lambda_function" "waze_data_irregularities_processing_function"{
             POOLSIZE = "${var.max_concurrent_db_connections_per_lambda}"
         }
     }
-    tags {
-        Environment = "${var.environment}"
-        Scripted = "true"
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
+}
+
+# setup the db initialize function
+resource "aws_lambda_function" "waze_db_initialize_function" {
+
+  # this function will be used to intialize the DB, so a DB instance must be in service first
+  depends_on = ["aws_rds_cluster_instance.waze_database_instances"]
+
+  filename      = "${var.lambda_artifacts_path}/waze-db-initialize.zip"
+  source_code_hash  = "${base64sha256(file("${var.lambda_artifacts_path}/waze-db-initialize.zip"))}"
+  function_name = "${var.object_name_prefix}-waze-db-initialize"
+  runtime       = "nodejs8.10"
+  role          = "${aws_iam_role.data_retrieval_execution_role.arn}"
+  handler       = "waze-db-initialize.initializeDatabase"
+  timeout       = 300
+  memory_size   = 512
+
+  environment {
+    variables = {
+      PGHOST     = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+      PGUSER     = "${aws_rds_cluster.waze_database_cluster.master_username}"
+      PGPASSWORD = "${aws_rds_cluster.waze_database_cluster.master_password}"
+      PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
+      PGPORT     = "${var.rds_port}"
+      POOLSIZE   = "1"
+
+      LAMBDAPGUSER = "${var.lambda_db_username}"
+      LAMBDAPGPASSWORD = "${var.lambda_db_password}"
+
+      READONLYPGUSER = "${var.rds_readonly_username}"
+      READONLYPASSWORD = "${var.rds_readonly_password}"
+
+      CURRENTVERSION = "${module.current_app_version.version_number}"
     }
+  }
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
 }
 
 # setup jams list api lambda
@@ -556,6 +615,23 @@ resource "aws_lambda_function" "jams_snapshot_api_function"{
     }
 }
 
+# invoke the db init lambda so that the database gets initialized
+data "aws_lambda_invocation" "waze_db_init_invocation" {
+  function_name = "${aws_lambda_function.waze_db_initialize_function.function_name}"
+  # input is required by the invocation data source, but not required by the function, so pass empty JSON
+  input = <<JSON
+{
+
+}
+JSON
+
+}
+
+output "db_init_response" {
+  value = "${data.aws_lambda_invocation.waze_db_init_invocation.result_map["response"]}"
+}
+
+
 ################################################
 # VPC
 ################################################
@@ -566,83 +642,86 @@ resource "aws_lambda_function" "jams_snapshot_api_function"{
 
 # we'll need to know what AZs are available in the region
 data "aws_availability_zones" "available" {
-    state = "available"
+  state = "available"
 }
 
 # create the VPC
 resource "aws_vpc" "waze_vpc" {
-    cidr_block = "${var.rds_vpc_cidr_block}"
-    instance_tenancy = "default"
-    enable_dns_hostnames = true
+  cidr_block           = "${var.rds_vpc_cidr_block}"
+  instance_tenancy     = "default"
+  enable_dns_hostnames = true
 
-    tags {
-        Name = "${var.object_name_prefix}-waze-vpc"
-        Environment = "${var.environment}"
-    }
+  tags {
+    Name        = "${var.object_name_prefix}-waze-vpc"
+    Environment = "${var.environment}"
+  }
 }
 
 # create the subnets
 locals {
-    # need the netmask of the rds cidr so we can calculate subnets
-	rds_vpc_cidr_block_netmask = "${element(split("/", var.rds_vpc_cidr_block), 1)}"
+  # need the netmask of the rds cidr so we can calculate subnets
+  rds_vpc_cidr_block_netmask = "${element(split("/", var.rds_vpc_cidr_block), 1)}"
 }
 
 resource "aws_subnet" "waze_subnets" {
-    count = "3"
-    vpc_id = "${aws_vpc.waze_vpc.id}"
-    # calculate a /24 cidr inside our rds vpc
-    cidr_block = "${cidrsubnet(var.rds_vpc_cidr_block, 24 - local.rds_vpc_cidr_block_netmask, count.index)}"
-    availability_zone = "${data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]}"
+  count  = "3"
+  vpc_id = "${aws_vpc.waze_vpc.id}"
 
-    tags {
-        Name = "${var.object_name_prefix}-waze-subnet-${format("%02d", count.index + 1)}"
-        Environment = "${var.environment}"
-    }
+  # calculate a /24 cidr inside our rds vpc
+  cidr_block        = "${cidrsubnet(var.rds_vpc_cidr_block, 24 - local.rds_vpc_cidr_block_netmask, count.index)}"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]}"
+
+  tags {
+    Name        = "${var.object_name_prefix}-waze-subnet-${format("%02d", count.index + 1)}"
+    Environment = "${var.environment}"
+  }
 }
 
 # create the internet gateway
 resource "aws_internet_gateway" "waze_gateway" {
-    vpc_id = "${aws_vpc.waze_vpc.id}"
+  vpc_id = "${aws_vpc.waze_vpc.id}"
 
-    tags {
-        Name = "${var.object_name_prefix}-waze-internet-gateway"
-        Environment = "${var.environment}"
-    }
+  tags {
+    Name        = "${var.object_name_prefix}-waze-internet-gateway"
+    Environment = "${var.environment}"
+  }
 }
 
 # adjust the default route table
 resource "aws_default_route_table" "waze_vpc_routes" {
-    default_route_table_id = "${aws_vpc.waze_vpc.default_route_table_id}"
+  default_route_table_id = "${aws_vpc.waze_vpc.default_route_table_id}"
 
-    route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_internet_gateway.waze_gateway.id}"
-    }
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.waze_gateway.id}"
+  }
 
-    tags {
-        Name = "${var.object_name_prefix}-waze-route-table"
-        Environment = "${var.environment}"
-    }
+  tags {
+    Name        = "${var.object_name_prefix}-waze-route-table"
+    Environment = "${var.environment}"
+  }
 }
 
 # need a security group to allow traffic to the db
 # TODO: JRS 2018-02-23 - probably want to rethink this later and lock down more
 resource "aws_security_group" "allow_postgres_traffic" {
-    name = "${var.object_name_prefix}-waze-db-security-group"
-    description = "Allow postgres ingress"
-    vpc_id = "${aws_vpc.waze_vpc.id}"
-    # allow postgres port
-    ingress {
-        from_port = "${var.rds_port}"
-        to_port = "${var.rds_port}"
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-        description = "Allow Postgres from anywhere"
-    }
-    tags {
-        Name = "${var.object_name_prefix}-waze-db-security-group"
-        Environment = "${var.environment}"
-    }
+  name        = "${var.object_name_prefix}-waze-db-security-group"
+  description = "Allow postgres ingress"
+  vpc_id      = "${aws_vpc.waze_vpc.id}"
+
+  # allow postgres port
+  ingress {
+    from_port   = "${var.rds_port}"
+    to_port     = "${var.rds_port}"
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow Postgres from anywhere"
+  }
+
+  tags {
+    Name        = "${var.object_name_prefix}-waze-db-security-group"
+    Environment = "${var.environment}"
+  }
 }
 
 ################################################
@@ -655,27 +734,27 @@ resource "aws_db_subnet_group" "waze_db_subnet_group" {
   subnet_ids = ["${aws_subnet.waze_subnets.*.id}"]
 
   tags {
-    Name = "${var.object_name_prefix}-waze-db-subnet-group"
+    Name        = "${var.object_name_prefix}-waze-db-subnet-group"
     Environment = "${var.environment}"
   }
 }
 
 # create an aurora postegres cluster to add our rds instance to
 resource "aws_rds_cluster" "waze_database_cluster" {
-    cluster_identifier = "${var.object_name_prefix}-waze-data-aurora-cluster"
-    engine = "aurora-postgresql"
-    database_name = "waze_data"
-    master_username = "${var.rds_master_username}"
-    master_password = "${var.rds_master_password}"
-    backup_retention_period = 3 # short because all the data could be regenerated easily
-    preferred_backup_window = "02:00-04:00"
-    preferred_maintenance_window = "wed:05:00-wed:06:00"
-    port = "${var.rds_port}"
-    vpc_security_group_ids = ["${aws_security_group.allow_postgres_traffic.id}"]
-    storage_encrypted = false # not encrypted because it isn't really sensitive
-    db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
-    final_snapshot_identifier = "${var.object_name_prefix}-db-final-snapshot"
-    skip_final_snapshot = "${var.skip_final_db_snapshot_on_destroy}"
+  cluster_identifier           = "${var.object_name_prefix}-waze-data-aurora-cluster"
+  engine                       = "aurora-postgresql"
+  database_name                = "waze_data"
+  master_username              = "${var.rds_master_username}"
+  master_password              = "${var.rds_master_password}"
+  backup_retention_period      = 3                                                    # short because all the data could be regenerated easily
+  preferred_backup_window      = "02:00-04:00"
+  preferred_maintenance_window = "wed:05:00-wed:06:00"
+  port                         = "${var.rds_port}"
+  vpc_security_group_ids       = ["${aws_security_group.allow_postgres_traffic.id}"]
+  storage_encrypted            = false                                                # not encrypted because it isn't really sensitive
+  db_subnet_group_name         = "${aws_db_subnet_group.waze_db_subnet_group.id}"
+  final_snapshot_identifier    = "${var.object_name_prefix}-db-final-snapshot"
+  skip_final_snapshot          = "${var.skip_final_db_snapshot_on_destroy}"
 }
 
 # create the actual DB instance
@@ -687,10 +766,10 @@ resource "aws_rds_cluster_instance" "waze_database_instances" {
   instance_class     = "db.r4.large"
   publicly_accessible = true
   db_subnet_group_name = "${aws_db_subnet_group.waze_db_subnet_group.id}"
-  engine = "aurora-postgresql"
+  engine               = "aurora-postgresql"
 
   tags {
-    Name = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
+    Name        = "${var.object_name_prefix}-waze-aurora-instance-${count.index}"
     Environment = "${var.environment}"
   }
 }

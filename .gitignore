@@ -1,12 +1,11 @@
-
-# let's allow .vscode so the debugger and launch settings get saved
-#\.vscode/
-
+ 
+\.vscode/
+ 
 node_modules/
 *.log
-
+ 
 **/\.terraform/
-
+ 
 code/lambda-functions/*/built/
-
+ 
 code/lambda-functions/*/dist/

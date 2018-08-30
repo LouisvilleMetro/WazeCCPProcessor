@@ -1,27 +1,26 @@
-CREATE SCHEMA waze;
+CREATE SCHEMA IF NOT EXISTS waze; -- schema should be created by install script, but keeping here for manual run as well
 
--- create the lambda role
-CREATE ROLE lambda_role LOGIN PASSWORD 'ENTER THE SAME PASSWORD YOU USED IN TERRAFORM HERE';
-
--- setup permissions for the lambda role
-GRANT ALL ON SCHEMA waze TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT ALL ON TABLES TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT SELECT, USAGE ON SEQUENCES TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze	GRANT EXECUTE ON FUNCTIONS TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze	GRANT USAGE ON TYPES TO lambda_role;
-
+-- version table will be used for version tracking and upgrading
+-- THIS TABLE MUST GET A RECORD ADDED WITH NEW INSTALLS TO INDICATE WHICH VERSION GOT INSTALLED
+-- Auto-schema install should handle adding the initial record
+-- Update scripts MUST ALSO add a new row to the table to indicate the new version
+CREATE TABLE waze.application_version
+(
+  "version_number"                  VARCHAR(30) PRIMARY KEY NOT NULL,
+  "install_date"                    TIMESTAMP NOT NULL
+);
 
 CREATE TABLE waze.data_files
 (
-"id"                                SERIAL PRIMARY KEY NOT NULL,
-"start_time_millis"                 BIGINT NOT NULL,
-"end_time_millis"                   BIGINT NOT NULL,
-"start_time"                        TIMESTAMP,
-"end_time"                          TIMESTAMP,
-"date_created"                      TIMESTAMP,
-"date_updated"                      TIMESTAMP,
-"file_name"                         TEXT NOT NULL,
-"json_hash"                         VARCHAR(40) NOT NULL
+  "id"                                SERIAL PRIMARY KEY NOT NULL,
+  "start_time_millis"                 BIGINT NOT NULL,
+  "end_time_millis"                   BIGINT NOT NULL,
+  "start_time"                        TIMESTAMP,
+  "end_time"                          TIMESTAMP,
+  "date_created"                      TIMESTAMP,
+  "date_updated"                      TIMESTAMP,
+  "file_name"                         TEXT NOT NULL,
+  "json_hash"                         VARCHAR(40) NOT NULL
 );
 
 CREATE UNIQUE INDEX "IDX_UNIQUE_json_hash"
@@ -75,7 +74,8 @@ CREATE TABLE waze.alerts
   "report_by_municipality_user"     BOOLEAN,
   "thumbs_up"                       INTEGER,
   "jam_uuid"                        TEXT,
-  "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
+  "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id),
+  "type_id"                         INTEGER
 );
 
 CREATE TABLE waze.irregularities
@@ -216,3 +216,14 @@ INSERT INTO waze.alert_types (type, subtype) VALUES ('CONSTRUCTION', 'NO_SUBTYPE
 INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED_HAZARD');
 INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED_CONSTRUCTION');
 INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED_EVENT');
+
+
+-- create indexes
+CREATE INDEX jams_pub_utc_date_idx ON waze.jams (pub_utc_date);
+CREATE INDEX alerts_pub_utc_date_idx ON waze.alerts (pub_utc_date);
+CREATE INDEX coordinates_jam_id_idx ON waze.coordinates (jam_id);
+CREATE INDEX coordinates_latitude_idx ON waze.coordinates (latitude);
+CREATE INDEX coordinates_longitude_idx ON waze.coordinates (longitude);
+CREATE INDEX coordinates_coordinate_type_id_idx ON waze.coordinates (coordinate_type_id);
+CREATE INDEX coordinates_alert_id_idx ON waze.coordinates (alert_id);
+CREATE INDEX alerts_type_id_idx ON waze.alerts (type_id);

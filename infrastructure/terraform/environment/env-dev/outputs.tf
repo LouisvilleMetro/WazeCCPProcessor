@@ -37,3 +37,8 @@ output "api_invoke_url" {
   value = "${module.environment.api_invoke_url}"
   description = "Base URL to invoke the API"
 }
+
+output "db_init_response" {
+    value = "${module.environment.db_init_response}"
+    description = "Response returned by DB initialization invocation"
+}
