@@ -8,6 +8,14 @@ import { JamFieldNames } from "./JamFieldNames";
 
 export class getJamListSnapshotQueryResult
 {
+    constructor(){
+        this.jams = null;
+        this.timeframeReturned = null;
+        this.nextTimeframe = null;
+        this.previousTimeframe = null;
+        this.resultCount = 0;
+    }
+
     jams : entities.JamWithLine[];
     timeframeReturned: entities.Timeframe;
     nextTimeframe: entities.Timeframe;
@@ -21,21 +29,21 @@ export function mapSnapshotResultFromDataFileQueryResult(dfResponse : QueryResul
 
     for(let row of dfResponse.rows)
     {
-        if(!result.timeframeReturned)
+        if(!result.timeframeReturned && row.start_time_millis && row.end_time_millis)
         {
             result.timeframeReturned = {
                 startTimeMillis : <number>row.start_time_millis,
                 endTimeMillis : <number>row.end_time_millis
             };
         }
-        if(!result.nextTimeframe)
+        if(!result.nextTimeframe && row.next_start_time_millis && row.next_end_time_millis)
         {
             result.nextTimeframe = {
                 startTimeMillis : <number>row.next_start_time_millis,
                 endTimeMillis : <number>row.next_end_time_millis
             };
         }
-        if(!result.previousTimeframe)
+        if(!result.previousTimeframe && row.prev_start_time_millis && row.prev_end_time_millis)
         {
             result.previousTimeframe = {
                 startTimeMillis : <number>row.prev_start_time_millis,
@@ -66,7 +74,7 @@ export function buildDataFileSqlAndParameterList(args: getJamSnapshotRequestMode
             " SELECT"+
                 " dfPrev.id prev_file_id,"+
                 " dfPrev.start_time_millis prev_start_time_millis,"+
-                " dfPrev.end_time_millis prev_start_time_millis"+
+                " dfPrev.end_time_millis prev_end_time_millis"+
             " FROM"+
                 " waze.data_files dfPrev"+
             " WHERE"+
