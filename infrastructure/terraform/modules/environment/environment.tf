@@ -135,6 +135,60 @@ resource "aws_s3_bucket" "waze_data_processed_bucket" {
   force_destroy = "${var.empty_s3_buckets_before_destroy}"
 }
 
+# create a bucket to serve the map out of, if it is set for deployment
+resource "aws_s3_bucket" "waze_simple_map_bucket" {
+  count = "${var.deploy_map  == "true" ? 1 : 0}"
+  bucket = "${var.object_name_prefix}-waze-data-map-${data.aws_caller_identity.current.account_id}"
+  force_destroy = "true"
+
+  website {
+    index_document = "index.html"
+  }
+}
+
+resource "aws_s3_bucket_policy" "waze_simple_map_bucket_policy" {
+  bucket = "${aws_s3_bucket.waze_simple_map_bucket.id}"
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "${aws_s3_bucket.waze_simple_map_bucket.arn}/*",
+      "Principal": "*"
+    }
+  ]
+}
+POLICY
+}
+
+
+# push the files to the bucket
+resource "aws_s3_bucket_object" "waze_simple_map_index_file" {
+  count = "${var.deploy_map  == "true" ? 1 : 0}"
+  bucket = "${aws_s3_bucket.waze_simple_map_bucket.id}"
+  key = "index.html"
+  source = "${var.map_artifacts_path}/index.html"
+  etag   = "${md5(file("${var.map_artifacts_path}/index.html"))}"
+  content_type = "text/html"
+}
+
+locals {
+  apiUrlJsContent = "var apiUrl = '${aws_api_gateway_deployment.waze_api_gateway_deployment.invoke_url}';"
+}
+
+
+resource "aws_s3_bucket_object" "waze_simple_map_api_url_file" {
+  count = "${var.deploy_map  == "true" ? 1 : 0}"
+  bucket = "${aws_s3_bucket.waze_simple_map_bucket.id}"
+  key = "apiUrl.js"
+  content = "${local.apiUrlJsContent}"
+  etag   = "${md5(local.apiUrlJsContent)}"
+}
+
 ###############################################
 # SQS
 ###############################################

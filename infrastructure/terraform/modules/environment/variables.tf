@@ -86,3 +86,15 @@ variable "lambda_artifacts_path" {
   type        = "string"
   description = "Path to directory containing zip files for lambda deployment"
 }
+
+variable "deploy_map" {
+  type = "string"
+  description = "Whether or not we publish the map during the terraform process"
+  default = "false"
+}
+
+variable "map_artifacts_path" {
+  type        = "string"
+  description = "Path to directory containing files for the simple map"
+  default = ""
+}

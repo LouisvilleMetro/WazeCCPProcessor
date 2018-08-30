@@ -44,4 +44,8 @@ module "environment" {
 
   # if you're not running this in the local directory, you'll likely need to update this value
   lambda_artifacts_path = "../../../../code/lambda-functions"
+
+  # if you're not running this in the local directory, you'll likely need to update this value
+  map_artifacts_path = "../../../../code/basic-map"
+  deploy_map = "false"
 }

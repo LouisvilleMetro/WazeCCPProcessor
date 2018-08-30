@@ -42,3 +42,8 @@ output "db_init_response" {
     value = "${module.environment.db_init_response}"
     description = "Response returned by DB initialization invocation"
 }
+
+output "simple_map_url" {
+  value = "${module.environment.simple_map_url}"
+  description = "URL to access simple map (if deployed)"
+}
