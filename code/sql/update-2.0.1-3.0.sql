@@ -13,6 +13,11 @@ FROM waze.alert_types AS t
 WHERE a.type = t.type 
  and a.subtype = t.subtype 
  and a.type_id is null; 
+ 
+-- add Jams fields
+ALTER TABLE waze.jams ADD ns_direction varchar(3) ;
+ALTER TABLE waze.jams ADD ew_direction varchar(3) ;
+ALTER TABLE waze.jams ADD dayofweek int4 ;
 
 -- need to add type_id data upon ingestion...
 
