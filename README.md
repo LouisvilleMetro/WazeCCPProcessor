@@ -1,4 +1,4 @@
-# WazeCCPProcessor
+# Waze Cloud Data Processor for Mobility Analysis
 
 Takes the [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database for querying, analysis, API hooks, and mapping.
 
@@ -10,7 +10,7 @@ You grab this [Terraform.io](http://www.terraform.io) code and deploy the infras
 
 You enter your CCP data feed URL as a parameter.
 
-Then you can store, analyze, query, extract live and historic data for your city.
+Then you can store, analyze, query, extract live and historic data for your city for many [use cases](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki/Use-Cases).
 
 See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) area for how you can help, and the [Wiki](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki) for all the details.
 
@@ -24,7 +24,7 @@ Organizations that are helping to fund, manage, promote, and support the project
 
 We have an end-to-end data processor and database working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
 
-**See [/docs/technical-deployment.md](/docs/technical-deployment.md) for very detailed instructions!**
+**See [/docs/technical-deployment.md](/docs/technical-deployment.md) for very detailed instructions** on how to deploy in 30 minutes.
 
 ## Finished Result
 
@@ -50,7 +50,7 @@ This config stands up infrastructure that is pretty inexpensive (and is about th
 
 We are working on writing API hooks, data visualizations and tools, and maps, which is all part of our project roadmap.
 
-See our [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) area for our blueprint of how we are proceeding. 
+See our [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects) and [Releases](https://github.com/LouisvilleMetro/WazeCCPProcessor/releases) areas for our blueprint of how we are proceeding. 
 
 **We would like to collaborate with you!**  Please suggest updates, work on the [help wanted issues](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), collaborate on the Wiki, etc.  It would be great to work together to get the best solution, use cases, and finish faster.   
 
