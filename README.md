@@ -1,12 +1,14 @@
-# Waze Cloud Data Processor for Mobility Analysis
+# Waze WARP (Waze Analytics Relational-database Platform)
 
-Takes the [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database for querying, analysis, API hooks, and mapping.
+**A free, open source cloud data processor for mobility use cases.**
+
+Takes the [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database system for historic and real-time querying, analysis, API hooks, mapping, and integrations.
 
 ## Overview
 
-Louisville has created an automated cloud processing solution that can be replicated by any CCP Partner, with the [help of other govs, partners, and sponsors](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki/Waze-CCP-Collaborative-Processor).
+Louisville has created an automated cloud processing solution that can be replicated by any CCP Partner in the cloud, with the [help of other govs, partners, and sponsors](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki/Waze-CCP-Collaborative-Processor).
 
-You grab this [Terraform.io](http://www.terraform.io) code and deploy the infrastructure-as-code stack (currently AWS but cloud agnostic).
+You grab this project's [Terraform.io](http://www.terraform.io) code and deploy the infrastructure-as-code stack (currently AWS but cloud agnostic).
 
 You enter your CCP data feed URL as a parameter.
 
@@ -22,9 +24,9 @@ Organizations that are helping to fund, manage, promote, and support the project
 
 ## Deploy the Solution to Your Cloud
 
-We have an end-to-end data processor and database working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
+We have an end-to-end data processor, database, and analytics tools working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
 
-**See [/docs/technical-deployment.md](/docs/technical-deployment.md) for very detailed instructions** on how to deploy in 30 minutes.
+**See [/docs/technical-deployment.md](/docs/technical-deployment.md) for very detailed instructions** on how to get up and running in [30 minutes](https://twitter.com/brendanbabb/status/994314335634604032).
 
 ## Finished Result
 
