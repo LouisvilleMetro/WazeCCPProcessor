@@ -1,8 +1,8 @@
-# Waze WARP (Waze Analytics Relational-database Platform)
+# Waze WARP 
 
 **A free, open source cloud data processor for mobility use cases.**
 
-Takes the [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database system for historic and real-time querying, analysis, API hooks, mapping, and integrations.
+WARP *(Waze Analytics Relational-database Platform)* takes the [Waze CCP](https://www.waze.com/ccp) data feed and processes it into a cloud database system for historic and real-time querying, analysis, API hooks, mapping, and integrations.
 
 ## Overview
 
