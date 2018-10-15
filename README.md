@@ -67,5 +67,7 @@ If you'd like a little more background on Louisville and what our city has been 
 3. [Waze April 2018 Monthly Call - Slides](https://docs.google.com/presentation/d/1loAV4BDAUyXdrn44QoLmYiwZdLmL59C4jvJGlZ1a-AY/)
 4. [Open Government Coalition](https://www.govintheopen.com/) Supporting Framework
 5. [Run Free Traffic Studies Using This Tool](https://medium.com/louisville-metro-opi2/how-we-do-free-traffic-studies-with-waze-data-and-how-you-can-too-a550b0728f65)
+6. [Traffic Study Tool Version 2](https://medium.com/louisville-metro-opi2/data-driven-governance-reflecting-on-opi2-bdd324aefbdc) with Intersection Analysis
+7. [UPenn Masters in Urban Spatial Analytics Program](https://insiderlouisville.com/government/infrastructure/a-new-data-project-aims-to-predict-louisville-traffic-collisions/) Collision Prediction Model
 
 
