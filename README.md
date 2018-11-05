@@ -18,9 +18,9 @@ See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects)
 
 ## Premier Project Sponsors
 
-Organizations that are helping to fund, manage, promote, and support the project.
+Organizations that are helping to fund, manage, collaborate, promote, and support the project.
 
-![Sponsors](https://i.imgur.com/lKyadYX.jpg)
+![Sponsors](https://i.imgur.com/IJh5FBy.jpg)
 
 ## Deploy the Solution to Your Cloud
 
@@ -37,6 +37,15 @@ Here's what is created:
 ![Waze Current Architecture](docs/Current%20Architecture.png "Waze Current Architecture")
 
 You can update the stack with new infrastructure as the code here gets updated, and it only affects new and changed items. You can also remove all the infrastructure automatically (minus the S3 bucket you created manually) by deleting the Terraform stack using `terraform destroy` after the `get` and `init` commands. 
+
+## Building on the Platform
+
+Since this is managed like software product, tools and integrations can be built upon it, and used by anyone who has deployed it.  Examples include:
+
+- [Power BI Traffic Study Tool](https://medium.com/louisville-metro-opi2/how-we-do-free-traffic-studies-with-waze-data-and-how-you-can-too-a550b0728f65)
+- [CARTO Connector](https://carto.com/blog/announcing-carto-waze-open-source-connector/)
+
+Create your own integrations and see our [Issues](https://github.com/LouisvilleMetro/WazeCCPProcessor/issues) for ideas.
 
 ## Loading Historic JSON Data Files
 
