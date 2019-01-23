@@ -20,7 +20,7 @@ See the [Projects](https://github.com/LouisvilleMetro/WazeCCPProcessor/projects)
 
 Organizations that are helping to fund, manage, collaborate, promote, and support the project.
 
-![Sponsors](https://i.imgur.com/yjT2Y8u.jpg)
+![Sponsors](https://raw.githubusercontent.com/LouisvilleMetro/WazeCCPProcessor/master/docs/images/sponsors.jpg)
 
 ## Deploy the Solution to Your Cloud
 
