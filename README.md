@@ -22,6 +22,8 @@ Organizations that are helping to fund, manage, collaborate, promote, and suppor
 
 ![Sponsors](https://raw.githubusercontent.com/LouisvilleMetro/WazeCCPProcessor/master/docs/images/sponsors.jpg)
 
+See the project [wiki](https://github.com/LouisvilleMetro/WazeCCPProcessor/wiki) for more details.
+
 ## Deploy the Solution to Your Cloud
 
 We have an end-to-end data processor, database, and analytics tools working that you can deploy.  It saves your CCP data as JSON files every 2 minutes, and processes the data into a combined real-time and historic database.
