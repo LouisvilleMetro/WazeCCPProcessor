@@ -1,3 +1,5 @@
+-- make sure postgis is ready
+CREATE EXTENSION postgis;
 
 -- add Jams fields
 ALTER TABLE waze.jams ADD COLUMN IF NOT EXISTS ns_direction varchar(3) ;
