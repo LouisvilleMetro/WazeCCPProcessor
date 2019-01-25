@@ -63,7 +63,7 @@ CREATE TABLE waze.jams
   "ns_direction"                    TEXT, -- N or S, eg. north or south, direction jam start to jam line heads
   "ew_direction"                    TEXT, -- E or W, eg. east or west
   "dayofweek"                       INTEGER, -- 1-7, eg Monday - Sunday
-  "geom_line"                       GEOGRAPHY(LINESTRING), -- from Issue #44
+  "geom_line"                       geometry(LINESTRING,4326), -- from Issue #44
   "turn_line"                       JSONB,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
@@ -88,7 +88,7 @@ CREATE TABLE waze.alerts
   "subtype"                         TEXT,
   "type_id"                         INTEGER, -- links to alert_types table
   "dayofweek"                       INTEGER, -- 1-7, eg Monday - Sunday
-  "geom_point"                      GEOGRAPHY(POINT), -- from Issue #44
+  "geom_point"                      geometry(POINT,4326), -- from Issue #44
   "report_by_municipality_user"     BOOLEAN,
   "thumbs_up"                       INTEGER,
   "jam_uuid"                        TEXT,
