@@ -226,4 +226,8 @@ CREATE INDEX coordinates_latitude_idx ON waze.coordinates (latitude);
 CREATE INDEX coordinates_longitude_idx ON waze.coordinates (longitude);
 CREATE INDEX coordinates_coordinate_type_id_idx ON waze.coordinates (coordinate_type_id);
 CREATE INDEX coordinates_alert_id_idx ON waze.coordinates (alert_id);
+<<<<<<< HEAD
 CREATE INDEX alerts_type_id_idx ON waze.alerts (type_id);
+=======
+CREATE INDEX alerts_type_id_idx ON waze.alerts (type_id);
+>>>>>>> refactoring-1
