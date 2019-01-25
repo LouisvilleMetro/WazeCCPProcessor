@@ -252,3 +252,5 @@ CREATE INDEX jams_uuid_idx ON waze.jams (uuid);
 CREATE INDEX alerts_uuid_idx ON waze.alerts (uuid);
 CREATE INDEX jams_ns_direction_idx ON waze.jams (ns_direction);
 CREATE INDEX jams_ew_direction_idx ON waze.jams (ew_direction);
+CREATE INDEX waze.jams_dayofweek_idx ON waze.jams (dayofweek);
+CREATE INDEX waze.alerts_dayofweek_idx ON waze.alerts (dayofweek);
