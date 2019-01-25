@@ -47,8 +47,18 @@ output "lambda_db_password" { value = "YOUR DESIRED PASSWORD FOR THE LAMBDA PROC
     - The dev environment has options set that will allow destroying everything with no extra work other than `terraform destroy`
     - The prod environment has options set that will prevent destroying the database unless you have taken a final snapshot and will prevent destroying the S3 buckets if there are files in them.  This is done to help protect production data from accidental, unrecoverable destruction.
 1. Set session variables for Terraform with access keys from AWS IAM user:
+
+    **Linux**
     - `export AWS_ACCESS_KEY_ID="YOUR IAM USER ACCESS KEY"`
     - `export AWS_SECRET_ACCESS_KEY="YOUR IAM USER SECRET ACCESS KEY"`
+    
+    **Windows**
+    - `set AWS_ACCESS_KEY_ID=‹value>`
+    - `set  AWS_SECRET_ACCESS_KEY=‹value>`
+    
+    **Windows Powershell**
+    - `$env:AWS_ACCESS_KEY_ID = "<value>"`
+    - `$env:AWS_SECRET_ACCESS_KEY = "<value>"`
 1. Run the following commands
     - `terraform get`
     - `terraform init -backend-config="../../backend/config"`
