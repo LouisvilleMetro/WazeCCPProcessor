@@ -13,7 +13,7 @@ FROM waze.alert_types AS t
 WHERE a.type = t.type 
  and a.subtype = t.subtype 
  and a.type_id is null; 
- 
+
 -- need to add type_id data upon ingestion...
 
 -- Create read-only user
@@ -39,14 +39,3 @@ CREATE TABLE waze.application_version
 
 -- insert the CURRENT VERSION NUMBER into the version table
 INSERT INTO waze.application_version (version_number, install_date) VALUES ('2.1', current_timestamp);
-
-
--- add Jams fields
-ALTER TABLE waze.jams ADD ns_direction varchar(3) ;
-ALTER TABLE waze.jams ADD ew_direction varchar(3) ;
-ALTER TABLE waze.jams ADD dayofweek int4 ;
-ALTER TABLE waze.jams ADD geom_line geography(LINESTRING) ;
-
--- add Alerts fields
-ALTER TABLE waze.alerts ADD dayofweek INTEGER ;
-ALTER TABLE waze.alerts ADD geom_point geography(POINT) ;
