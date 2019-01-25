@@ -3,7 +3,7 @@
 -- select all indexes
 SELECT * FROM pg_indexes WHERE tablename like '%' and schemaname = 'waze' order by indexname ;
 
--- create indexes
+-- create indexes (NOTE: THESE ARE CREATED IN THE BASE SCHEMA ALREADY AND MAINTAINED HERE FOR EASY DROP/RECREATE IF NECESSARY)
 CREATE INDEX CONCURRENTLY jams_pub_utc_date_idx ON waze.jams (pub_utc_date);
 CREATE INDEX CONCURRENTLY alerts_pub_utc_date_idx ON waze.alerts (pub_utc_date);
 CREATE INDEX CONCURRENTLY coordinates_jam_id_idx ON waze.coordinates (jam_id);

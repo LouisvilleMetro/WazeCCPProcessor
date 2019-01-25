@@ -3,6 +3,12 @@ provider "aws" {
   region = "${var.default_resource_region}"
 }
 
+# load up the current app version module
+module "current_app_version" {
+  source      = "../current-app-version"
+}
+
+
 ###############################################
 # Cloudwatch
 ###############################################
@@ -380,7 +386,7 @@ resource "aws_iam_role_policy_attachment" "data_retrieval_lambda_basic_logging_r
 resource "aws_lambda_function" "waze_data_retrieval_function" {
   filename      = "${var.lambda_artifacts_path}/waze-data-download.zip"
   function_name = "${var.object_name_prefix}-waze-data-retrieval"
-  runtime       = "nodejs6.10"
+  runtime       = "nodejs8.10"
   role          = "${aws_iam_role.data_retrieval_execution_role.arn}"
   handler       = "waze-data-download.downloadData"
   timeout       = 300
@@ -467,7 +473,7 @@ resource "aws_lambda_function" "waze_data_alerts_processing_function" {
 resource "aws_lambda_function" "waze_data_jams_processing_function" {
   filename      = "${var.lambda_artifacts_path}/waze-data-process.zip"
   function_name = "${var.object_name_prefix}-waze-data-jams-processing"
-  runtime       = "nodejs6.10"
+  runtime       = "nodejs8.10"
   role          = "${aws_iam_role.data_retrieval_execution_role.arn}"
   handler       = "waze-data-process.processDataJams"
   timeout       = 300
@@ -494,7 +500,7 @@ resource "aws_lambda_function" "waze_data_jams_processing_function" {
 resource "aws_lambda_function" "waze_data_irregularities_processing_function" {
   filename      = "${var.lambda_artifacts_path}/waze-data-process.zip"
   function_name = "${var.object_name_prefix}-waze-data-irregularities-processing"
-  runtime       = "nodejs6.10"
+  runtime       = "nodejs8.10"
   role          = "${aws_iam_role.data_retrieval_execution_role.arn}"
   handler       = "waze-data-process.processDataIrregularities"
   timeout       = 300
@@ -516,6 +522,63 @@ resource "aws_lambda_function" "waze_data_irregularities_processing_function" {
     Scripted    = "true"
   }
 }
+
+# setup the db initialize function
+resource "aws_lambda_function" "waze_db_initialize_function" {
+
+  # this function will be used to intialize the DB, so a DB instance must be in service first
+  depends_on = ["aws_rds_cluster_instance.waze_database_instances"]
+
+  filename      = "${var.lambda_artifacts_path}/waze-db-initialize.zip"
+  source_code_hash  = "${base64sha256(file("${var.lambda_artifacts_path}/waze-db-initialize.zip"))}"
+  function_name = "${var.object_name_prefix}-waze-db-initialize"
+  runtime       = "nodejs8.10"
+  role          = "${aws_iam_role.data_retrieval_execution_role.arn}"
+  handler       = "waze-db-initialize.initializeDatabase"
+  timeout       = 300
+  memory_size   = 512
+
+  environment {
+    variables = {
+      PGHOST     = "${aws_rds_cluster.waze_database_cluster.endpoint}"
+      PGUSER     = "${aws_rds_cluster.waze_database_cluster.master_username}" 
+      PGPASSWORD = "${aws_rds_cluster.waze_database_cluster.master_password}"
+      PGDATABASE = "${aws_rds_cluster.waze_database_cluster.database_name}"
+      PGPORT     = "${var.rds_port}"
+      POOLSIZE   = "1"
+
+      LAMBDAPGUSER = "${var.lambda_db_username}"
+      LAMBDAPGPASSWORD = "${var.lambda_db_password}"
+
+      READONLYPGUSER = "${var.rds_readonly_username}"
+      READONLYPASSWORD = "${var.rds_readonly_password}"
+
+      CURRENTVERSION = "${module.current_app_version.version_number}"
+    }
+  }
+
+  tags {
+    Environment = "${var.environment}"
+    Scripted    = "true"
+  }
+}
+
+# invoke the db init lambda so that the database gets initialized
+data "aws_lambda_invocation" "waze_db_init_invocation" {
+  function_name = "${aws_lambda_function.waze_db_initialize_function.function_name}"
+  # input is required by the invocation data source, but not required by the function, so pass empty JSON
+  input = <<JSON
+{
+  
+}
+JSON
+
+}
+
+output "db_init_response" {
+  value = "${data.aws_lambda_invocation.waze_db_init_invocation.result_map["response"]}"
+}
+
 
 ################################################
 # VPC
@@ -631,8 +694,6 @@ resource "aws_rds_cluster" "waze_database_cluster" {
   database_name                = "waze_data"
   master_username              = "${var.rds_master_username}"
   master_password              = "${var.rds_master_password}"
-  readonly_username            = "${var.rds_readonly_username}"
-  readonly_password            = "${var.rds_readonly_password}"
   backup_retention_period      = 3                                                    # short because all the data could be regenerated easily
   preferred_backup_window      = "02:00-04:00"
   preferred_maintenance_window = "wed:05:00-wed:06:00"
