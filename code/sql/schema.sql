@@ -10,17 +10,6 @@ CREATE TABLE waze.application_version
   "install_date"                    TIMESTAMP NOT NULL
 );
 
--- create the lambda role
-CREATE ROLE lambda_role LOGIN PASSWORD 'ENTER THE SAME PASSWORD YOU USED IN TERRAFORM HERE';
-
--- setup permissions for the lambda role
-GRANT ALL ON SCHEMA waze TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT ALL ON TABLES TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze GRANT SELECT, USAGE ON SEQUENCES TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze	GRANT EXECUTE ON FUNCTIONS TO lambda_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA waze	GRANT USAGE ON TYPES TO lambda_role;
-
-
 CREATE TABLE waze.data_files
 (
   "id"                                SERIAL PRIMARY KEY NOT NULL,
@@ -60,10 +49,6 @@ CREATE TABLE waze.jams
   "blocking_alert_id"               TEXT,
   "line"                            JSONB,
   "type"                            TEXT,
-  "ns_direction"                    TEXT, -- N or S, eg. north or south, direction jam start to jam line heads
-  "ew_direction"                    TEXT, -- E or W, eg. east or west
-  "dayofweek"                       INTEGER, -- 1-7, eg Monday - Sunday
-  "geom_line"                       GEOGRAPHY(LINESTRING), -- from Issue #44
   "turn_line"                       JSONB,
   "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
 );
@@ -86,13 +71,11 @@ CREATE TABLE waze.alerts
   "confidence"                      INTEGER,
   "type"                            TEXT,
   "subtype"                         TEXT,
-  "type_id"                         INTEGER, -- links to alert_types table
-  "dayofweek"                       INTEGER, -- 1-7, eg Monday - Sunday
-  "geom_point"                      GEOGRAPHY(POINT), -- from Issue #44
   "report_by_municipality_user"     BOOLEAN,
   "thumbs_up"                       INTEGER,
   "jam_uuid"                        TEXT,
-  "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id)
+  "datafile_id"                     BIGINT NOT NULL REFERENCES waze.data_files (id),
+  "type_id"                         INTEGER
 );
 
 CREATE TABLE waze.irregularities
@@ -235,20 +218,12 @@ INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED
 INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED_EVENT');
 
 
-
 -- create indexes
 CREATE INDEX jams_pub_utc_date_idx ON waze.jams (pub_utc_date);
 CREATE INDEX alerts_pub_utc_date_idx ON waze.alerts (pub_utc_date);
 CREATE INDEX coordinates_jam_id_idx ON waze.coordinates (jam_id);
 CREATE INDEX coordinates_latitude_idx ON waze.coordinates (latitude);
 CREATE INDEX coordinates_longitude_idx ON waze.coordinates (longitude);
-CREATE INDEX coordinates_order_idx ON waze.coordinates (order);
 CREATE INDEX coordinates_coordinate_type_id_idx ON waze.coordinates (coordinate_type_id);
 CREATE INDEX coordinates_alert_id_idx ON waze.coordinates (alert_id);
 CREATE INDEX alerts_type_id_idx ON waze.alerts (type_id);
-CREATE INDEX alerts_sub_type_idx ON waze.alerts (sub_type);
-CREATE INDEX alerts_type_idx ON waze.alerts (type);
-CREATE INDEX jams_uuid_idx ON waze.jams (uuid);
-CREATE INDEX alerts_uuid_idx ON waze.alerts (uuid);
-CREATE INDEX jams_ns_direction_idx ON waze.jams (ns_direction);
-CREATE INDEX jams_ew_direction_idx ON waze.jams (ew_direction);
