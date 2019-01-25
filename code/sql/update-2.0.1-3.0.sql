@@ -3,12 +3,14 @@
 ALTER TABLE waze.jams ADD COLUMN IF NOT EXISTS ns_direction varchar(3) ;
 ALTER TABLE waze.jams ADD COLUMN IF NOT EXISTS ew_direction varchar(3) ;
 ALTER TABLE waze.jams ADD COLUMN IF NOT EXISTS dayofweek int4 ;
-ALTER TABLE waze.jams ADD COLUMN IF NOT EXISTS geom_line geography(LINESTRING) ;
+--ALTER TABLE waze.jams ADD COLUMN IF NOT EXISTS geom_line geography(LINESTRING) ;
+SELECT AddGeometryColumn ('waze','jams','geom_line',4326,'LINESTRING',2);
 
 -- add Alerts fields
 ALTER TABLE waze.alerts ADD COLUMN IF NOT EXISTS type_id INTEGER;
 ALTER TABLE waze.alerts ADD COLUMN IF NOT EXISTS dayofweek INTEGER ;
-ALTER TABLE waze.alerts ADD COLUMN IF NOT EXISTS geom_point geography(POINT) ;
+--ALTER TABLE waze.alerts ADD COLUMN IF NOT EXISTS geom_point geography(POINT) ;
+SELECT AddGeometryColumn ('waze','alerts','geom_point',4326,'POINT',2);
 
 
 -- UPDATE JAMS TABLE
@@ -39,7 +41,7 @@ FROM waze.jams
 WHERE dayofweek is null; 
 
 -- jams.geom_point - fill empty cells with data
--- See Issue #44 for this code, add here
+
 
 -- UPDATE ALERTS TABLE 
 
@@ -64,7 +66,7 @@ FROM waze.alerts
 WHERE dayofweek is null;  
  
 -- alerts.geom_point - fill empty cells with data
--- See Issue #44 for this code, add here
+UPDATE waze.alerts SET geom_point = ST_SetSRID(ST_MakeLine(longitude, latitude), 4326);
 
 
 -- Create read-only user
