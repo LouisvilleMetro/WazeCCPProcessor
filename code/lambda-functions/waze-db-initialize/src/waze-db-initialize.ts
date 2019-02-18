@@ -102,6 +102,8 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
             console.log("working on " + fileName);
 
             let fileContent = fs.readFileSync(fileName, 'utf-8');
+            // just in case it was saved as UTF8 BOM .. 
+            fileContent = fileContent.replace(/^\uFEFF/, '');
 
             //now we need to replace the placeholders
             //we'll also do a quick check that they actually exist, and throw an error if not, just in case someone broke the script
@@ -122,10 +124,11 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
             }
 
             //execute the sql!
-            console.log(replacedFileContent);
-            let result = await dbClient.query(replacedFileContent);
-            console.log("Executed " + fileName + wasReplaced);
-            console.log("   Result ",JSON.stringify(result));
+            console.log("Executing " + fileName + wasReplaced);
+            let results = await dbClient.query(replacedFileContent);
+            for(let result of (results as any)) { 
+                console.log(result.command +" "+result.rowCount);
+            }
         }
         //return success
         console.log('Database intialization succeeded');
