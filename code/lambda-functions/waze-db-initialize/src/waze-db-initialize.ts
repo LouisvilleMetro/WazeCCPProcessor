@@ -95,8 +95,8 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
         var fileNames = glob.sync("*.sql", {});  // sort defaults to true; 
 
         for (let fileName of fileNames) {
-            if (!fileName.match(/^\d\d/)) { 
-                console.log("Skipping "+fileName+" because it doesn't start with two digits");
+            if (!fileName.match(/^\d/)) { 
+                console.log("Skipping "+fileName+" because it doesn't start with a digit");
                 continue; 
             }
             console.log("working on " + fileName);

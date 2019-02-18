@@ -29,6 +29,7 @@ module.exports = {
         new CopyWebpackPlugin([
           '../../sql/2.0-00-initialize-schema-and-roles.sql',
           '../../sql/2.0-01-create-tables.sql',
+          '../../sql/2.0-02-insert-defaults.sql'
         ]),
         new ZipPlugin({
           // OPTIONAL: defaults to the Webpack output path (above)
