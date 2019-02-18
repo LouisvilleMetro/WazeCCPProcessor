@@ -38,18 +38,18 @@ output "rds_master_username" {
 }
 
 output "rds_master_password" {
-  value = "masterpassword"
+  value = "mawstir12345"
 }
 
 output "rds_readonly_username" {
-  value = "waze_readonly"
+  value = "roo"
 }
 
 output "rds_readonly_password" {
-  value = "readonlypassword"
+  value = "ridunli1234"
 }
 
 # set a password that we'll later make sure exists in the db on the lambda_role user
 output "lambda_db_password" {
-  value = "lambdapassword"
+  value = "lamalama1234"
 }
