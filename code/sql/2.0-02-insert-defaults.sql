@@ -1,9 +1,10 @@
-﻿/*************************************************************************************** 
+/*************************************************************************************** 
 Note that this script is always run, so everything in it must be idempotent (rerunnable)
 IE, use if not exists liberally
 
 Any errors will fail the script
 ***************************************************************************************/
+
 INSERT INTO waze.coordinate_type (id, type_name) VALUES (1, 'Line') ON CONFLICT DO NOTHING;
 INSERT INTO waze.coordinate_type (id, type_name) VALUES (2, 'Turn Line') ON CONFLICT DO NOTHING;
 INSERT INTO waze.coordinate_type (id, type_name) VALUES (3, 'Location') ON CONFLICT DO NOTHING;
@@ -71,4 +72,3 @@ INSERT INTO waze.alert_types (type, subtype) VALUES ('CONSTRUCTION', 'NO_SUBTYPE
 INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED_HAZARD') ON CONFLICT DO NOTHING;
 INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED_CONSTRUCTION') ON CONFLICT DO NOTHING;
 INSERT INTO waze.alert_types (type, subtype) VALUES ('ROAD_CLOSED', 'ROAD_CLOSED_EVENT') ON CONFLICT DO NOTHING;
-*/
