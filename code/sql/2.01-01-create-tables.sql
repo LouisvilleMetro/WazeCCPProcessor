@@ -4,6 +4,7 @@ IE, use "if not exists" liberally
 
 Any errors will fail the script
 ***************************************************************************************/
+
 CREATE TABLE IF NOT EXISTS waze.data_files
 (
 "id"                                SERIAL PRIMARY KEY NOT NULL,
@@ -164,5 +165,5 @@ END
 $$
 ;
 
--- In version 2.0, indexes were NOT created.  
+-- In version 2.0, performance indexes were NOT created other than IDX_UNIQUE_json_hash
 

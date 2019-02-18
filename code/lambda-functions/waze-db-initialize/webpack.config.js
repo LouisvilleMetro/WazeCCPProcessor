@@ -27,10 +27,12 @@ module.exports = {
     },
     plugins: [
         new CopyWebpackPlugin([
-          '../../sql/2.0-00-initialize-schema-and-roles.sql',
-          '../../sql/2.0-01-create-tables.sql',
-          '../../sql/2.0-02-insert-defaults.sql',
-          '../../sql/3.0-00-add-readonly-role.sql'
+          '../../sql/2.01-00-initialize-schema-and-roles.sql',
+          '../../sql/2.01-01-create-tables.sql',
+          '../../sql/2.01-02-insert-defaults.sql',
+          '../../sql/3.0-00-add-readonly-role.sql',
+          '../../sql/3.0-01-add-columns.sql',
+          '../../sql/3.0-02-indexes.sql',
         ]),
         new ZipPlugin({
           // OPTIONAL: defaults to the Webpack output path (above)
