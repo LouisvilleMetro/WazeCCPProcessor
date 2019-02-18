@@ -99,7 +99,6 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
                 console.log("Skipping "+fileName+" because it doesn't start with a digit");
                 continue; 
             }
-            console.log("working on " + fileName);
 
             let fileContent = fs.readFileSync(fileName, 'utf-8');
             // just in case it was saved as UTF8 BOM .. 

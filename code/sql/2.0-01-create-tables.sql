@@ -163,3 +163,6 @@ BEGIN
 END
 $$
 ;
+
+-- In version 2.0, indexes were NOT created.  
+
