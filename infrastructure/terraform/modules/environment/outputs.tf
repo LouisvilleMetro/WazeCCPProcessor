@@ -32,8 +32,3 @@ output "data_processing_dlq_sns_topic_arn" {
     value = "${aws_sns_topic.data_processing_dlq_sns_topic.arn}"
     description = "ARN of the SNS topic that will receive notifications when records are found in the dead letter queue"
 }
-
-output "db_init_response" {
-    value = "${module.environment.db_init_response}"
-    description = "Response returned by DB initialization invocation"
-}
