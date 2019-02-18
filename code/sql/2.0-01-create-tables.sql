@@ -1,4 +1,4 @@
-/*************************************************************************************** 
+﻿/*************************************************************************************** 
 Note that this script is always run, so everything in it must be idempotent (rerunnable)
 IE, use "if not exists" liberally
 
@@ -150,3 +150,16 @@ CREATE TABLE IF NOT EXISTS waze.alert_types
   "type"                            TEXT NOT NULL,
   "subtype"                         TEXT
 );
+
+DO $$
+BEGIN
+    IF NOT EXISTS ( 
+        SELECT *                      -- SELECT list can stay empty for this
+        FROM   pg_catalog.pg_constraint
+        WHERE  conname = 'alert_types_unique_combo') THEN
+            ALTER TABLE waze.alert_types
+                ADD CONSTRAINT alert_types_unique_combo UNIQUE("type", "subtype");
+    END IF; 
+END
+$$
+;

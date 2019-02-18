@@ -126,8 +126,10 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
             //execute the sql!
             console.log("Executing " + fileName + wasReplaced);
             let results = await dbClient.query(replacedFileContent);
-            for(let result of (results as any)) { 
-                console.log(result.command +" "+result.rowCount);
+            for(let index in results as any) { 
+                let result = (results as any)[index];
+                // hopefully this is enough to figure out which statement is a problem in the future
+                console.log(index + ". "+result.command +" "+(result.rowCount === null ? "" : result.rowCount));
             }
         }
         //return success
