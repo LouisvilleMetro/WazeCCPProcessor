@@ -8,7 +8,8 @@
         "alwaysStrict": true,
         "checkJs": true,
         "noEmitOnError": true,
-        "module": "commonjs"
+        "module": "commonjs",
+        "sourceMap": true
     },
     "include": [
         "./src/**/*"

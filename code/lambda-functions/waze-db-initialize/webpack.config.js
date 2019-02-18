@@ -5,7 +5,8 @@ var CopyWebpackPlugin = require('copy-webpack-plugin')
 module.exports = {
     entry: './src/waze-db-initialize.ts',
     target: 'node',
-    mode: 'production',
+    devtool: 'inline-source-map',
+    mode: 'development',
     module: {
       rules: [
         {
@@ -26,8 +27,8 @@ module.exports = {
     },
     plugins: [
         new CopyWebpackPlugin([
-          '../../sql/initialize-schema-and-roles.sql',
-          '../../sql/schema.sql'
+          '../../sql/2.0-00-initialize-schema-and-roles.sql',
+          '../../sql/2.0-01-create-tables.sql',
         ]),
         new ZipPlugin({
           // OPTIONAL: defaults to the Webpack output path (above)
