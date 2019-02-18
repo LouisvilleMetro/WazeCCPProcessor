@@ -563,6 +563,23 @@ resource "aws_lambda_function" "waze_db_initialize_function" {
   }
 }
 
+# invoke the db init lambda so that the database gets initialized
+data "aws_lambda_invocation" "waze_db_init_invocation" {
+  function_name = "${aws_lambda_function.waze_db_initialize_function.function_name}"
+  # input is required by the invocation data source, but not required by the function, so pass empty JSON
+  input = <<JSON
+{
+  
+}
+JSON
+
+}
+
+output "db_init_response" {
+  value = "${data.aws_lambda_invocation.waze_db_init_invocation.result_map["response"]}"
+}
+
+
 ################################################
 # VPC
 ################################################

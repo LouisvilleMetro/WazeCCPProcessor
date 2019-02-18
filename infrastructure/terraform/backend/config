@@ -1,5 +1,5 @@
 # the name of the state management bucket
-bucket = "waze-terraform-state-management-sunnytest-west2"
+bucket = "YOUR STATE MANAGEMENT BUCKET NAME HERE"
 
 # the region where the state management bucket resides
-region = "us-west-2" 
+region = "us-east-1" 
