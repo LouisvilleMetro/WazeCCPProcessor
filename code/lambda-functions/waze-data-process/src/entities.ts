@@ -56,6 +56,8 @@ export class Jam {
     type: string;
     turn_line: string;
     datafile_id: number;
+    ew_direction: string; 
+    ns_direction: string; 
 }
 
 export class Irregularity {

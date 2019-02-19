@@ -159,7 +159,9 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         line, 
         datafile_id,
         type,
-        turn_line
+        turn_line,
+        ns_direction,
+        ew_direction
     )
     VALUES (
         $1,     -- id
@@ -182,7 +184,9 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         $18,    -- line
         $19,    -- datafile_id
         $20,    -- type
-        $21     -- turn_line
+        $21,    -- turn_line
+        $22,    -- ns_direction
+        $23     -- ew_direction
     ) 
     ON CONFLICT (id) DO UPDATE SET 
         uuid=$2, 
@@ -204,7 +208,9 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         line=$18, 
         datafile_id=$19,
         type=$20,
-        turn_line=$21`;
+        turn_line=$21,
+        ns_direction=$22,
+        ew_direction=$23`;
 //#endregion
 
     let result = await connectionPool.getPool().query(sql, [
@@ -229,6 +235,8 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         jam.datafile_id,        //datafile_id
         jam.type,               //type
         jam.turn_line,          //turn_line
+        jam.ns_direction,       //ns_direction 
+        jam.ew_direction,       //ew_direction
     ]);
 
     //nothing currently to update on the jam object based on SQL return
