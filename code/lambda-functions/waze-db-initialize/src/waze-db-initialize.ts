@@ -56,58 +56,51 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
         // c) represent version 2 as its own script. 
         // d) always apply all scripts in a particular order
 
-        /*      //check if the schema already exists, and if so, check the version installed against what we're trying to install
-              //if versions are same, just log info message and exit, otherwise log warning and exit
-              let schemaResult = await dbClient.query("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'waze';");
-              
-              console.log("schemaresult: "+JSON.stringify(schemaResult));
-              
-              if (schemaResult.rowCount > 0){
-                  //the schema exists, see if we have a version table (that gets its own special error)
-                  console.log("SCHEMA exists, verifying versions");
+        // e) ALSO!  Terraform plan ends up invoking this function. 
+        //    If it takes too long, then thats bad. 
+        //    So make it quickly determine not to invoke itself.
+
+        let fileNames = glob.sync("*.sql", {});  // sort defaults to true; 
+        let loadedVersions:string[] = []; 
+
+        let versionTableExistsResult = await dbClient.query(`
+            SELECT *
+            FROM information_schema.tables 
+            WHERE table_schema = 'waze' 
+              AND table_name = 'application_version'`);
+        if(versionTableExistsResult.rowCount === 0){
+            // no versionTable, so don't populate alreadyLoadedVersions
+        } else { 
+            let result = await dbClient.query("SELECT * FROM waze.application_version");
+            if (result.rowCount>0) { 
+                for(let row of result.rows) { 
+                    if (row['version_number']) { 
+                        loadedVersions[row['version_number']] = row; 
+                        console.log("detected loaded version "+row['version_number']+": "+JSON.stringify(row));
+                    }                    
+                }
+            }
+        }        
       
-                  let versionTableExistsResult = await dbClient.query("SELECT 1 FROM information_schema.tables WHERE table_schema = 'waze' AND table_name = 'application_version';")
-                  if(versionTableExistsResult.rowCount === 0){
-                      //there IS NO version table, which is a problem
-                      console.error('Version table not found');
-                      return { response: formatTerraformWarning('Version table not found, please verify SQL schema is up to date.') };
-                  }
-      
-                  //version table found, so we need to make sure it is the same version as what we would be trying to install
-                  let versionCheckResult = await dbClient.query("SELECT version_number from waze.application_version ORDER BY install_date DESC LIMIT 1");
-                  //if we didn't get a result, or get a result that isn't an exact match, warn about it
-                  if(versionCheckResult.rowCount === 0){
-                      console.error('No version records found');
-                      return { response: formatTerraformWarning('No version records found, please verify SQL schema is up to date.') };
-                  }
-                  else if(versionCheckResult.rows[0].version_number !== current_version){
-                      console.error('Version mismatch');
-                      return { response: formatTerraformWarning('Version mismatch, please verify SQL schema is up to date.') };
-                  }
-                  else{
-                      //versions match up, so just return a notice that nothing needed to be done
-                      console.log('Versions match, no DB changes needed');
-                      return { response: "Database is up-to-date" };
-                  }
-              }
-      */
-
-        var fileNames = glob.sync("*.sql", {});  // sort defaults to true; 
-
-        // BUG:  due to how terraform invokes this, it gets run every time we do a plan
-        // if it takes too long, that throws terraform off
-        // we HAVE to do something where we check to see if we've already run this file and if so 
-        // don't run it.  
-
         for (let fileName of fileNames) {
-
-            if (!fileName.match(/^\d/)) { 
-                console.log("Skipping "+fileName+" because it doesn't start with a digit");
+            let m = fileName.match(/^([0-9\.]+)/);
+            
+            if (!m || m.length<1) { 
+                console.log("Skipping "+fileName+" because it doesn't start with a version");
                 continue; 
             }
 
+            let  version = m[0];
+            if (loadedVersions[<any>version]) { 
+                console.log("Skipping "+fileName+" because version is already loaded");
+                continue; 
+            }
+
+            // It is up to the script to insert rows into application_version
+
             let fileContent = fs.readFileSync(fileName, 'utf-8');
             // just in case it was saved as UTF8 BOM .. 
+            
             fileContent = fileContent.replace(/^\uFEFF/, '');
 
             //now we need to replace the placeholders
@@ -166,5 +159,5 @@ function formatTerraformWarning(warningMessage: string): string {
 }
 
 // for running locally
-console.log("test 9:53am");
+console.log("test 2:16pm");
 initializeDatabase(null, null, (r) => console.log("callback: " + JSON.stringify(r)));

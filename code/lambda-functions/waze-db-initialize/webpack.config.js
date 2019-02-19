@@ -5,8 +5,7 @@ var CopyWebpackPlugin = require('copy-webpack-plugin')
 module.exports = {
     entry: './src/waze-db-initialize.ts',
     target: 'node',
-    devtool: 'inline-source-map',
-    mode: 'development',
+    mode: 'production',
     module: {
       rules: [
         {
@@ -27,6 +26,7 @@ module.exports = {
     },
     plugins: [
         new CopyWebpackPlugin([
+          // cannot do wildcards because it messes with watches
           '../../sql/2.01-00-initialize-schema-and-roles.sql',
           '../../sql/2.01-01-create-tables.sql',
           '../../sql/2.01-02-insert-defaults.sql',
