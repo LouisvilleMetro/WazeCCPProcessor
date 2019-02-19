@@ -94,7 +94,13 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
 
         var fileNames = glob.sync("*.sql", {});  // sort defaults to true; 
 
+        // BUG:  due to how terraform invokes this, it gets run every time we do a plan
+        // if it takes too long, that throws terraform off
+        // we HAVE to do something where we check to see if we've already run this file and if so 
+        // don't run it.  
+
         for (let fileName of fileNames) {
+
             if (!fileName.match(/^\d/)) { 
                 console.log("Skipping "+fileName+" because it doesn't start with a digit");
                 continue; 
