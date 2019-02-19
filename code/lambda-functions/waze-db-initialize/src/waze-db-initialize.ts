@@ -20,6 +20,8 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
         let readonly_password = process.env.READONLYPASSWORD;
         let current_version = process.env.CURRENTVERSION;
 
+        let whatWeExecuted:string[] = [];
+
         // how I debug / work on this: 
 
         // Terraform: 
@@ -61,7 +63,7 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
         //    So make it quickly determine not to invoke itself.
 
         let fileNames = glob.sync("*.sql", {});  // sort defaults to true; 
-        let loadedVersions:string[] = []; 
+        let loadedVersions = []; 
 
         let versionTableExistsResult = await dbClient.query(`
             SELECT *
@@ -124,6 +126,7 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
             //execute the sql!
             console.log("Executing " + fileName + wasReplaced);
             let results = await dbClient.query(replacedFileContent);
+            whatWeExecuted[<any>fileName] = "ok";
             for(let index in results as any) { 
                 let result = (results as any)[index];
                 // hopefully this is enough to figure out which statement is a problem in the future
@@ -131,13 +134,16 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
             }
         }
         //return success
-        console.log('Database intialization succeeded');
-        return { response: "Database intialization succeeded" }
+        if (whatWeExecuted.length == 0 ) { 
+            return { response: "No changes"}
+        } else { 
+            return { response: "Database intialization succeeded - " + whatWeExecuted.length+" scripts executed" }; 
+        } 
     }
     catch (err) {
         console.error(err);
         callback(err);
-        return err;
+        return formatTerraformWarning(err);
     }
     finally {
         // CLOSE THAT CLIENT!
@@ -159,5 +165,5 @@ function formatTerraformWarning(warningMessage: string): string {
 }
 
 // for running locally
-console.log("test 2:16pm");
-initializeDatabase(null, null, (r) => console.log("callback: " + JSON.stringify(r)));
+// console.log("test 2:16pm");
+// initializeDatabase(null, null, (r) => console.log("callback: " + JSON.stringify(r)));
