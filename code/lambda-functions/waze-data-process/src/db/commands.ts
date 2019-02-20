@@ -244,6 +244,14 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
 
 }
 
+// update geometry for a jam. This uses a function that converst jsonb to geometry
+// the function definition is assumed to match the SRID of the column definitions
+export async function updateJamGeometry(id: string) { 
+    const sql = `update waze.jams set geom_line=waze.line_to_geometry(line) where id=$1`;
+    let result = await connectionPool.getPool().query(sql, [id]);
+    return; 
+}
+
 // upsert an irregularity record
 export async function upsertIrregularityCommand(irregularity: entities.Irregularity): Promise<void> {
     //for simplicity, we'll always insert and update all fields, since our hash should ensure there aren't unexpected changes

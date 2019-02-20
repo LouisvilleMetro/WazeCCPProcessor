@@ -23,6 +23,24 @@ ALTER TABLE waze.alerts ADD COLUMN IF NOT EXISTS type_id INTEGER;
 ALTER TABLE waze.alerts ADD COLUMN IF NOT EXISTS dayofweek INTEGER;
 ALTER TABLE waze.alerts ADD COLUMN IF NOT EXISTS geom_point geometry(POINT,4326);
 
+CREATE OR REPLACE FUNCTION waze.line_to_geometry( line jsonb )
+RETURNS GEOMETRY
+AS $$
+BEGIN
+  -- Set the result to be the same SRID as what's used in column definitions
+	RETURN(
+		SELECT ST_setsrid(
+      ST_MakeLine(
+        ST_MakePoint(
+          (line -> n ->> 'x')::NUMERIC, 
+          (line -> n ->> 'y')::NUMERIC
+        )
+      ),4326) 
+		FROM generate_series(0, jsonb_array_length(line) - 1) AS n
+ 	);
+END
+$$ LANGUAGE PLPGSQL IMMUTABLE;
+
 -- Version 2.0.1 didn't know about this table, so adding it now
 INSERT INTO waze.application_version(version_number, install_date) VALUES('2.01',NOW()) ON CONFLICT DO NOTHING; 
 

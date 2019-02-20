@@ -399,6 +399,9 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
             //upsert the jam
             await db.upsertJamCommand(jamEntity);
 
+            // also update its geometry.. sorry, double write. 
+            db.updateJamGeometry(jamEntity.id);
+
             //add the individual coordinate records from the line and turnLine fields
             //we won't do these in parallel because we're already running jams async
             //and don't want to just blast the database
@@ -598,8 +601,11 @@ function invokeListProcessor(data: wazeTypes.dataFileWithInternalId, lambdaARN: 
 
 export { processDataFile, processDataAlerts, processDataJams, processDataIrregularities }
 
+
 // TEST CODE - remove later
 // import fs = require('fs');
-// let data = fs.readFileSync("../SampleData1.json", "utf8");
-// var json = JSON.parse(data);
-// processDataJams(json, null, (x) => console.log("result: " + JSON.stringify(x)));
+// if (process.env.COMPUTERNAME == 'LAPTOP-VV0NRBGM') { 
+//     let data = fs.readFileSync("C:/code/WazeCCPProcessor/code/lambda-functions/waze-data-process/SampeData1.json", "utf8");
+//     var json = JSON.parse(data);
+//     processDataJams(json, null, (x) => console.log("result: " + JSON.stringify(x)));
+// }
