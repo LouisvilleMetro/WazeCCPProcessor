@@ -32,6 +32,7 @@ export class Alert {
     thumbs_up: number;
     jam_uuid: string;
     datafile_id: number;
+    dayofweek: number; 
 }
 
 export class Jam {
@@ -56,6 +57,9 @@ export class Jam {
     type: string;
     turn_line: string;
     datafile_id: number;
+    ew_direction: string; 
+    ns_direction: string; 
+    dayofweek: number;
 }
 
 export class Irregularity {
