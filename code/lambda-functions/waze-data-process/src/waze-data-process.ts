@@ -610,12 +610,3 @@ function invokeListProcessor(data: wazeTypes.dataFileWithInternalId, lambdaARN: 
 }
 
 export { processDataFile, processDataAlerts, processDataJams, processDataIrregularities }
-
-
-// TEST CODE - remove later
-// import fs = require('fs');
-// if (process.env.COMPUTERNAME == 'LAPTOP-VV0NRBGM') { 
-//     let data = fs.readFileSync("C:/code/WazeCCPProcessor/code/lambda-functions/waze-data-process/SampeData1.json", "utf8");
-//     var json = JSON.parse(data);
-//     processDataJams(json, null, (x) => console.log("result: " + JSON.stringify(x)));
-// }
