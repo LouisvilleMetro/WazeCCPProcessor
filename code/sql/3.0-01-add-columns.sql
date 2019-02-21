@@ -41,6 +41,22 @@ BEGIN
 END
 $$ LANGUAGE PLPGSQL IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION waze.location_to_geometry( location jsonb )
+RETURNS GEOMETRY
+AS $$
+BEGIN
+  -- Set the result to be the same SRID as what's used in column definitions
+	RETURN(
+		SELECT ST_setsrid(
+    	    ST_MakePoint(
+          		(location ->> 'x')::NUMERIC, 
+          		(location ->> 'y')::NUMERIC
+        	)
+        	,4326)
+ 	);
+END
+$$ LANGUAGE PLPGSQL IMMUTABLE;
+
 -- Version 2.0.1 didn't know about this table, so adding it now
 INSERT INTO waze.application_version(version_number, install_date) VALUES('2.01',NOW()) ON CONFLICT DO NOTHING; 
 

@@ -297,6 +297,12 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
             //upsert the alert
             await db.upsertAlertCommand(alertEntity);
 
+            // process dependent fields
+            // TODO: dayofweek goes here
+
+            // process geometry fields
+            await db.updateAlertGeometry(alertEntity.id);
+
             //add the individual coordinate record from the location field
             //alerts only have 1 of these, in the location object
             if (alert.location) {

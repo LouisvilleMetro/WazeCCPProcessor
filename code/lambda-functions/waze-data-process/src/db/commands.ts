@@ -132,6 +132,14 @@ export async function upsertAlertCommand(alert: entities.Alert): Promise<void> {
     return;
 }
 
+// update geometry for a jam. This uses a function that converst jsonb to geometry
+// the function definition is assumed to match the SRID of the column definitions
+export async function updateAlertGeometry(id: string) { 
+    const sql = `update waze.alerts set geom_point=waze.location_to_geometry(location) where id=$1`;
+    let result = await connectionPool.getPool().query(sql, [id]);
+    return; 
+}
+
 // upsert a jam record
 export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
     //for simplicity, we'll always insert and update all fields, since our hash should ensure there aren't unexpected changes
