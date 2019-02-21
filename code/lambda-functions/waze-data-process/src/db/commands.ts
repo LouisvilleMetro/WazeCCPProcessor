@@ -59,7 +59,8 @@ export async function upsertAlertCommand(alert: entities.Alert): Promise<void> {
             report_by_municipality_user, 
             thumbs_up, 
             jam_uuid, 
-            datafile_id
+            datafile_id,
+            dayofweek
         )
         VALUES (
             $1,     -- id
@@ -81,7 +82,8 @@ export async function upsertAlertCommand(alert: entities.Alert): Promise<void> {
             $17,    -- report_by_municipality_user
             $18,    -- thumbs_up
             $19,    -- jam_uuid 
-            $20     -- datafile_id
+            $20,    -- datafile_id
+            $21     -- dayofweek
         ) 
         ON CONFLICT (id) DO UPDATE SET 
             uuid=$2, 
@@ -102,7 +104,8 @@ export async function upsertAlertCommand(alert: entities.Alert): Promise<void> {
             report_by_municipality_user=$17, 
             thumbs_up=$18, 
             jam_uuid=$19, 
-            datafile_id=$20`;
+            datafile_id=$20,
+            dayofweek=$21`;
     //#endregion
 
     let result = await connectionPool.getPool().query(sql, [
@@ -126,10 +129,19 @@ export async function upsertAlertCommand(alert: entities.Alert): Promise<void> {
         alert.thumbs_up,            //thumbs_up
         alert.jam_uuid ,            //jam_uuid 
         alert.datafile_id,          //datafile_id
+        alert.dayofweek             //dayofweek
     ]);
 
     //nothing currently to alter on the alert object based on SQL return
     return;
+}
+
+// update geometry for a jam. This uses a function that converst jsonb to geometry
+// the function definition is assumed to match the SRID of the column definitions
+export async function updateAlertGeometry(id: string) { 
+    const sql = `update waze.alerts set geom_point=waze.location_to_geometry(location) where id=$1`;
+    let result = await connectionPool.getPool().query(sql, [id]);
+    return; 
 }
 
 // upsert a jam record
@@ -159,7 +171,10 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         line, 
         datafile_id,
         type,
-        turn_line
+        turn_line,
+        ns_direction,
+        ew_direction,
+        dayofweek
     )
     VALUES (
         $1,     -- id
@@ -182,7 +197,10 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         $18,    -- line
         $19,    -- datafile_id
         $20,    -- type
-        $21     -- turn_line
+        $21,    -- turn_line
+        $22,    -- ns_direction
+        $23,    -- ew_direction
+        $24     -- dayofweek
     ) 
     ON CONFLICT (id) DO UPDATE SET 
         uuid=$2, 
@@ -204,7 +222,10 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         line=$18, 
         datafile_id=$19,
         type=$20,
-        turn_line=$21`;
+        turn_line=$21,
+        ns_direction=$22,
+        ew_direction=$23,
+        dayofweek=$24`;
 //#endregion
 
     let result = await connectionPool.getPool().query(sql, [
@@ -229,11 +250,22 @@ export async function upsertJamCommand(jam: entities.Jam): Promise<void> {
         jam.datafile_id,        //datafile_id
         jam.type,               //type
         jam.turn_line,          //turn_line
+        jam.ns_direction,       //ns_direction 
+        jam.ew_direction,       //ew_direction
+        jam.dayofweek           //dayofweek
     ]);
 
     //nothing currently to update on the jam object based on SQL return
     return;
 
+}
+
+// update geometry for a jam. This uses a function that converst jsonb to geometry
+// the function definition is assumed to match the SRID of the column definitions
+export async function updateJamGeometry(id: string) { 
+    const sql = `update waze.jams set geom_line=waze.line_to_geometry(line) where id=$1`;
+    let result = await connectionPool.getPool().query(sql, [id]);
+    return; 
 }
 
 // upsert an irregularity record

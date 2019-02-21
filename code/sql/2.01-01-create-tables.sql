@@ -166,4 +166,3 @@ $$
 ;
 
 -- In version 2.0, performance indexes were NOT created other than IDX_UNIQUE_json_hash
-
