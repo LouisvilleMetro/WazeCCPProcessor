@@ -291,14 +291,15 @@ const processDataAlerts: Handler = async (event: wazeTypes.dataFileWithInternalI
                 report_by_municipality_user: alert.reportByMunicipalityUser,
                 thumbs_up: alert.nThumbsUp,
                 jam_uuid: alert.jamUuid,
-                datafile_id: data_file_id
+                datafile_id: data_file_id, 
+                dayofweek: null
             }
 
-            //upsert the alert
-            await db.upsertAlertCommand(alertEntity);
-
             // process dependent fields
-            // TODO: dayofweek goes here
+            alertEntity.dayofweek = alertEntity.pub_utc_date.getDay();             
+
+            //upsert the alert
+            await db.upsertAlertCommand(alertEntity);            
 
             // process geometry fields
             await db.updateAlertGeometry(alertEntity.id);
@@ -371,7 +372,8 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
                 datafile_id: data_file_id,
                 turn_line: JSON.stringify(jam.turnLine),
                 ns_direction: null, 
-                ew_direction: null
+                ew_direction: null, 
+                dayofweek: null
             }
 
             // calculate derived things
@@ -401,6 +403,8 @@ const processDataJams: Handler = async (event: wazeTypes.dataFileWithInternalId,
                     }
                 }
             }
+
+            jamEntity.dayofweek = jamEntity.pub_utc_date.getDay(); 
 
             //upsert the jam
             await db.upsertJamCommand(jamEntity);
