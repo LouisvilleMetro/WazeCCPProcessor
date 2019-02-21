@@ -25,28 +25,24 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
         // how I debug / work on this: 
 
         // Terraform: 
-        //   I uncommented the lambda invocation in terraform to prevent running this code
-        //   I had to terraform apply everything, as there are things necessary for cloudwatch logs and stuff that are not obvious if you just -target this function
+        //   I commented the lambda invocation in terraform to prevent running this code, and had the out variable return a constant
+        //   I had to terraform apply everything, as there are things necessary for cloudwatch logs and stuff that are not obvious 
+        //   if you just -target this function
 
         // command lines to build and upload new zip: 
         //   npm run build    "run the script called build" .. creates a new .zip file
         //   aws lambda update-function-code --function-name development-tf-waze-db-initialize --region us-west-2 --zip-file fileb://../waze-db-initialize.zip
 
-        // use code like: 
-        //   console.log("schemaresult: "+JSON.stringify(schemaResult));
+        // Rewriting logic from version 2 to version 3: 
 
-        // new code: 
-
-        // 1. If schema doesn't exist, run the schema script. 
-        //    Problem: Version 2 didn't create readonly password 
+        // 1. Problem: Version 2 didn't create readonly password 
         //    Change to: Always run schema create script, and use "if not exist" and update the password.    
         //    Everything else will be updated too, so better update database to match. 
 
-        // 2. run the create script
-        //    Problem: New Version 3 has all the things already in it
+        // 2. Problem: New Version 3 has all the things already in it
         //    if we have infrastructure set up and run this terraform, its going to invoke this lambda
         //    Therefore a lot of things already exist, and are going to fail
-        //    Solution:  make the main create script "if not exists" as well
+        //    Solution:  Everything is idempotent
 
         // 3. Run additional update scripts
         //    ... 
@@ -55,12 +51,14 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
         // So pretty much, what this is looking like: 
         // a) always create if not exists
         // b) force update of passwords every time (rewrite create schema script)
-        // c) represent version 2 as its own script. 
+        // c) represent version 2 as its own (set of) scripts (except idempotent). 
         // d) always apply all scripts in a particular order
 
         // e) ALSO!  Terraform plan ends up invoking this function. 
         //    If it takes too long, then thats bad. 
-        //    So make it quickly determine not to invoke itself.
+        //    So make it quickly determine not to invoke itself
+        //    So it compares script filenames vs loaded versions and skips
+        //    so if you want to reexcute a thing, delete from application_version
 
         let fileNames = glob.sync("*.sql", {});  // sort defaults to true; 
         let loadedVersions = []; 
@@ -143,7 +141,7 @@ const initializeDatabase: Handler = async (event: any, context: Context, callbac
     catch (err) {
         console.error(err);
         callback(err);
-        return formatTerraformWarning(err);
+        return { response: formatTerraformWarning(err) };
     }
     finally {
         // CLOSE THAT CLIENT!
@@ -163,7 +161,3 @@ function formatTerraformWarning(warningMessage: string): string {
 
     `;
 }
-
-// for running locally
-// console.log("test 2:16pm");
-// initializeDatabase(null, null, (r) => console.log("callback: " + JSON.stringify(r)));
