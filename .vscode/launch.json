@@ -1,0 +1,49 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "DB - GetJamsSnapshotQuery",
+            "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/db/getJamSnapshotQuery.js",
+            "preLaunchTask": "build-waze-data-api",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
+        },{
+            "type": "node",
+            "request": "launch",
+            "name": "DB - GetJamListQuery",
+            "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/db/getJamListQuery.js",
+            "preLaunchTask": "build-waze-data-api",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
+        },{
+            "type": "node",
+            "request": "launch",
+            "name": "API - GetJamsSnapshot",
+            "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/getJamsSnapshot.js",
+            "preLaunchTask": "build-waze-data-api",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
+        },{
+            "type": "node",
+            "request": "launch",
+            "name": "API - GetJamsList",
+            "program": "${workspaceFolder}/code/lambda-functions/waze-data-api/built/waze-data-api/src/tests/getJamsList.js",
+            "preLaunchTask": "build-waze-data-api",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "envFile":"${workspaceFolder}/code/lambda-functions/waze-data-api/src/tests/db/test-db.env"
+        }
+    ]
+}

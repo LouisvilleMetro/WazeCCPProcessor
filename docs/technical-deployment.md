@@ -30,8 +30,10 @@ We have an end-to-end data processor and database working that you can deploy.  
 output "default_resource_region" { value = "us-east-1" }
 
 output "waze_data_url" { value = "YOUR SPECIFIC WAZE DATA FULL HTTP URL HERE" }
-output "rds_master_username" { value = "YOUR DESIRED DB USER NAME HERE" }
+output "rds_master_username" { value = "waze_admin" }
 output "rds_master_password" { value = "YOUR DESIRED DB ADMIN PASSWORD HERE" }
+output "rds_readonly_username" { value = "waze_readonly" }
+output "rds_readonly_password" { value = "YOUR DESIRED DB READ ONLY PASSWORD HERE" }
 output "lambda_db_password" { value = "YOUR DESIRED PASSWORD FOR THE LAMBDA PROCESSING USER HERE"}
 ```
 

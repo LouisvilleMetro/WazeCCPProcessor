@@ -2,13 +2,13 @@ import hash = require('object-hash');
 import AWS = require('aws-sdk');
 import moment = require('moment');
 import { Handler, Context, Callback, ScheduledEvent } from 'aws-lambda';
-import * as entities from './entities';
-import * as wazeTypes from './waze-types';
+import * as entities from '../../shared-lib/src/entities';
+import * as wazeTypes from '../../shared-lib/src/waze-types';
 import * as db from './db';
 import util = require('util');
 import { PromiseResult } from 'aws-sdk/lib/request';
 import throttle = require('promise-parallel-throttle')
-import consolePatch from './consolePatch'
+import consolePatch from '../../shared-lib/src/consolePatch'
 
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS();

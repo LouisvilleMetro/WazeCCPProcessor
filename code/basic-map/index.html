@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Waze Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.2/dist/leaflet.css"
+        integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
+        crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.3.2/dist/leaflet.js"
+        integrity="sha512-2fA79E27MOeBgLjmBrtAgM/20clVSV8vJERaW/EcnnWCVGwQRazzKtQS1kIusCZv1PtaQxosDZZ0F1Oastl55w=="
+        crossorigin=""></script>
+    <script
+                src="https://code.jquery.com/jquery-3.3.1.js"
+                integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+                crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
+    <script src="apiUrl.js"></script>
+    <style>
+        #mapid {
+                height: 800px;
+        }
+    </style>
+</head>
+<body>
+      <select id="TimeFilter">
+            <option value="00:00">12:00 AM</option>
+            <option value="01:00">01:00 AM</option>
+            <option value="02:00">02:00 AM</option>
+            <option value="03:00">03:00 AM</option>
+            <option value="04:00">04:00 AM</option>
+            <option value="05:00">05:00 AM</option>
+            <option value="06:00">06:00 AM</option>
+            <option value="07:00">07:00 AM</option>
+            <option value="08:00">08:00 AM</option>
+            <option value="09:00">09:00 AM</option>
+            <option value="10:00">10:00 AM</option>
+            <option value="11:00">11:00 AM</option>
+            <option value="12:00">12:00 PM</option>
+            <option value="13:00">01:00 PM</option>
+            <option value="14:00">02:00 PM</option>
+            <option value="15:00">03:00 PM</option>
+            <option value="16:00">04:00 PM</option>
+            <option value="17:00">05:00 PM</option>
+            <option value="18:00">06:00 PM</option>
+            <option value="19:00">07:00 PM</option>
+            <option value="20:00">08:00 PM</option>
+            <option value="21:00">09:00 PM</option>
+            <option value="22:00">10:00 PM</option>
+            <option value="23:00">11:00 PM</option>
+      </select>
+
+      <button id="RefreshReport" onclick="refreshReport()">Refresh</button>
+
+      <div id="mapid"></div>
+</body>
+<script type="text/javascript">
+      var mymap = L.map('mapid').setView([38.1970, -85.6633], 16);
+
+      L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+            attribution: 'ATTRIBUTION GOES HERE',
+      }).addTo(mymap);
+
+      mymap.setZoom(12);
+
+      var polyline_options = {
+            color: '#C90F13',
+            weight: 5
+      };
+
+      refreshReport();
+
+      function refreshReport() {
+            var fullDateTimeUTC = moment(`${moment().format('YYYY-MM-DD')} ${$("#TimeFilter").val()}`).utc();
+
+            var url = apiUrl + "/jams-snapshot?date=" +
+                  fullDateTimeUTC.format('YYYY-MM-DD') +
+                  "&time=" + fullDateTimeUTC.format('HH:mm A') +
+                  "&minLat=" + mymap.getBounds().getSouth() +
+                  "&maxLat=" + mymap.getBounds().getNorth() +
+                  "&minLon=" + mymap.getBounds().getWest() +
+                  "&maxLon=" + mymap.getBounds().getEast() +
+                  "&format=json&coordinates=true";
+
+            $.ajax({
+                  type: "GET",
+                  url: url,
+                  success: function (msg) {
+                        clearMap();
+                        $.each(msg.jams, function(jamIndex, jam) {
+
+                              var linePoints = [];
+
+                              $.each(jam.line, function(lineIndex, line) {
+                                    linePoints.push([line.y, line.x]);
+                              })
+
+                              var polyline = L.polyline(linePoints, polyline_options).addTo(mymap);
+                        })
+                  }
+            });
+      }
+
+    function clearMap() {
+        for(i in mymap._layers) {
+            if(mymap._layers[i]._path != undefined) {
+                try {
+                    mymap.removeLayer(mymap._layers[i]);
+                }
+                catch(e) {
+                    console.log("problem with " + e + mymap._layers[i]);
+                }
+            }
+        }
+    }
+
+</script>
+</html>

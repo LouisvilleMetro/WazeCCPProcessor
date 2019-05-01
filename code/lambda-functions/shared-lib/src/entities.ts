@@ -34,7 +34,7 @@ export class Alert {
     datafile_id: number;
 }
 
-export class Jam {
+export abstract class JamBase<TLine> {
     id: string;
     uuid: string;
     pub_millis: number;
@@ -52,10 +52,30 @@ export class Jam {
     turn_type: string;
     level: number;
     blocking_alert_id: string;
-    line: string;
+    line: TLine;
     type: string;
     turn_line: string;
     datafile_id: number;
+    startLongitude?: number;
+    startLatitude?: number;
+}
+
+export class Jam extends JamBase<string> {
+
+}
+
+export class JamWithLine extends JamBase<Array<Point>> {
+
+}
+
+export class Point  {
+    x: number;
+    y: number;
+}
+
+export class Timeframe {
+    startTimeMillis: number;
+    endTimeMillis: number;
 }
 
 export class Irregularity {

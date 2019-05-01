@@ -14,7 +14,7 @@ export default function applyConsolePatch() {
             {
                 // This handles console.log( object )
                 placeholders.unshift( obj );
-                placeholders.unshift( methodName.toUpperCase() + ": %j" );
+                placeholders.unshift( methodName.toUpperCase() + ": %o" );
             }
         
             (<any>origConMethods)[methodName].apply( console, placeholders );

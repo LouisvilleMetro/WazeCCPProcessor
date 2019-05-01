@@ -32,3 +32,14 @@ output "data_processing_dlq_sns_topic_arn" {
     value = "${aws_sns_topic.data_processing_dlq_sns_topic.arn}"
     description = "ARN of the SNS topic that will receive notifications when records are found in the dead letter queue"
 }
+
+output "api_invoke_url" {
+  value = "${aws_api_gateway_deployment.waze_api_gateway_deployment.invoke_url}"
+  description = "Base URL to invoke the API"
+}
+
+output "simple_map_url" {
+  # this looks weird, but don't worry, there's really only ever 1
+  value = "${join(",", aws_s3_bucket.waze_simple_map_bucket.*.website_endpoint)}"
+  description = "URL to access simple map (if deployed)"
+}
